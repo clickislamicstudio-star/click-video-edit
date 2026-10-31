@@ -1,32 +1,59 @@
 /**
- * sw.js - Service Worker for PWA Offline
+ * sw.js v2 - Cache Killer + Network First for index.html
  */
-const CACHE_NAME = 'click-editor-v1';
+const CACHE_NAME = 'click-editor-v2'; // v1 -> v2 so old cache deletes
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/js/core/math.js',
-  '/js/core/snap-engine.js',
-  '/js/core/transform.js',
-  '/js/core/keyframe.js',
-  '/js/core/i18n.js',
-  '/js/store.js',
-  '/js/hardware.js',
-  '/js/app.js'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', event => {
+  console.log('SW v2 Installing - Killing old cache');
+  self.skipWaiting(); // Force new SW immediately
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(name => {
+          if(name !== CACHE_NAME) {
+            console.log('Deleting old cache:', name);
+            return caches.delete(name);
+          }
+        })
+      );
+    })
   );
 });
 
+self.addEventListener('activate', event => {
+  console.log('SW v2 Activated - Claiming clients');
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  
+  // For index.html - ALWAYS Network First (no cache)
+  if(url.pathname === '/' || url.pathname.endsWith('index.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Update cache with fresh index.html
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+  
+  // For JS/CSS - Network First, fallback to cache
   event.respondWith(
-    caches.match(event.request).then(response => {
-      if(response) return response;
-      return fetch(event.request);
-    })
+    fetch(event.request)
+      .then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
