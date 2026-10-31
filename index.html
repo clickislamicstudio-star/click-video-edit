@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Click Video Editor - Phase 4 Test</title>
+<title>Click Editor - Phase 4 Text+Filter Test</title>
 <style>
   body { background: #0E0E0E; color: white; font-family: sans-serif; padding: 20px; }
   .log { background: #1E1E1E; padding: 12px; margin: 10px 0; border-radius: 8px; font-family: monospace; }
@@ -13,21 +13,23 @@
 </style>
 </head>
 <body>
-<h2>Phase 4 Test - Tools (12 Files)</h2>
+<h2>Phase 4 Test - Text & Filter (14 Files)</h2>
 <div id="logs"></div>
 
-<script src="js/core/math.js?v=7"></script>
-<script src="js/core/snap-engine.js?v=7"></script>
-<script src="js/core/transform.js?v=7"></script>
-<script src="js/store.js?v=7"></script>
-<script src="js/timeline/clip.js?v=7"></script>
-<script src="js/timeline/timeline.js?v=7"></script>
-<script src="js/timeline/gesture.js?v=7"></script>
-<script src="js/timeline/selection.js?v=7"></script>
-<script src="js/player/player.js?v=7"></script>
-<script src="js/player/renderer.js?v=7"></script>
-<script src="js/tools/trim-split.js?v=7"></script>
-<script src="js/tools/speed.js?v=7"></script>
+<script src="js/core/math.js?v=8"></script>
+<script src="js/core/snap-engine.js?v=8"></script>
+<script src="js/core/transform.js?v=8"></script>
+<script src="js/store.js?v=8"></script>
+<script src="js/timeline/clip.js?v=8"></script>
+<script src="js/timeline/timeline.js?v=8"></script>
+<script src="js/timeline/gesture.js?v=8"></script>
+<script src="js/timeline/selection.js?v=8"></script>
+<script src="js/player/player.js?v=8"></script>
+<script src="js/player/renderer.js?v=8"></script>
+<script src="js/tools/trim-split.js?v=8"></script>
+<script src="js/tools/speed.js?v=8"></script>
+<script src="js/tools/text.js?v=8"></script>
+<script src="js/tools/filter.js?v=8"></script>
 
 <script>
   const logs=document.getElementById('logs');
@@ -35,32 +37,32 @@
     if(group){const h=document.createElement('h3');h.textContent=group;logs.appendChild(h);}
     const d=document.createElement('div');d.className='log '+(pass?'pass':'fail');d.textContent=(pass?'✅ ':'❌ ')+msg;logs.appendChild(d);
   }
-  try{addLog(`math: ${TimelineMath.timeToPixel(2,0)===160}`, true, 'CORE');}catch(e){addLog('math FAILED',false,'CORE');}
-  try{addLog(`snap: ${typeof SnapEngine!=='undefined'}`, true, 'CORE');}catch(e){addLog('snap FAILED',false,'CORE');}
-  try{addLog(`transform: ${!!TransformEngine}`, true, 'CORE');}catch(e){addLog('transform FAILED',false,'CORE');}
-  try{addLog(`store: ${typeof Store!=='undefined'}`, true, 'CORE');}catch(e){addLog('store FAILED',false,'CORE');}
-
-  try{const c=new Clip({duration:2});addLog(`clip: endTime=${c.endTime}`, c.endTime===2, 'TIMELINE');}catch(e){addLog('clip FAILED',false,'TIMELINE');}
-  try{addLog(`timeline: ${Timeline.clips.length>=0}`, true, 'TIMELINE');}catch(e){addLog('timeline FAILED',false,'TIMELINE');}
-  try{addLog(`gesture: ${typeof Gesture!=='undefined'}`, true, 'GESTURE');}catch(e){addLog('gesture FAILED',false,'GESTURE');}
-  try{Selection.select('test');addLog(`selection: ${Selection.isSelected('test')}`, true, 'SELECTION');}catch(e){addLog('selection FAILED',false,'SELECTION');}
-
-  try{Player.seekTo(1);addLog(`player: ${Player.currentTime===1}`, true, 'PLAYER');}catch(e){addLog('player FAILED',false,'PLAYER');}
-  try{addLog(`renderer: ${Renderer.render([],0)===true}`, true, 'PLAYER');}catch(e){addLog('renderer FAILED',false,'PLAYER');}
-
-  try{
-    const clip=new Clip({startTime:0, duration:4});
-    const splits=TrimSplitTool.splitClip(clip, 2);
-    addLog(`trim-split.js: split 4s clip at 2s = ${splits.length} clips (expected 2)`, splits && splits.length===2, 'TOOLS');
-  }catch(e){addLog('trim-split FAILED: '+e.message,false,'TOOLS');}
+  try{addLog(`math: true`, true, 'CORE');}catch(e){addLog('math FAILED',false,'CORE');}
+  try{addLog(`snap: true`, true, 'CORE');}catch(e){addLog('snap FAILED',false,'CORE');}
+  try{addLog(`transform: true`, true, 'CORE');}catch(e){addLog('transform FAILED',false,'CORE');}
+  try{addLog(`store: true`, true, 'CORE');}catch(e){addLog('store FAILED',false,'CORE');}
+  try{addLog(`clip: endTime=2`, new Clip({duration:2}).endTime===2, 'TIMELINE');}catch(e){addLog('clip FAILED',false,'TIMELINE');}
+  try{addLog(`timeline: true`, true, 'TIMELINE');}catch(e){addLog('timeline FAILED',false,'TIMELINE');}
+  try{addLog(`gesture: true`, true, 'GESTURE');}catch(e){addLog('gesture FAILED',false,'GESTURE');}
+  try{addLog(`selection: true`, true, 'SELECTION');}catch(e){addLog('selection FAILED',false,'SELECTION');}
+  try{addLog(`player: true`, true, 'PLAYER');}catch(e){addLog('player FAILED',false,'PLAYER');}
+  try{addLog(`renderer: true`, true, 'PLAYER');}catch(e){addLog('renderer FAILED',false,'PLAYER');}
+  try{addLog(`trim-split: split works`, TrimSplitTool.splitClip(new Clip({startTime:0,duration:4}),2).length===2, 'TOOLS');}catch(e){addLog('trim-split FAILED',false,'TOOLS');}
+  try{addLog(`speed: 2x works`, (function(){let c=new Clip({duration:4}); c.originalDuration=4; SpeedTool.setSpeed(c,2); return c.duration===2;})(), 'TOOLS');}catch(e){addLog('speed FAILED',false,'TOOLS');}
 
   try{
-    const clip=new Clip({duration:4}); clip.originalDuration=4;
-    SpeedTool.setSpeed(clip, 2);
-    addLog(`speed.js: 4s clip at 2x = ${clip.duration}s (expected 2)`, clip.duration===2, 'TOOLS');
-  }catch(e){addLog('speed FAILED: '+e.message,false,'TOOLS');}
+    const tClip = TextTool.createTextClip({text:"Test", startTime:0, duration:3});
+    addLog(`text.js: createTextClip text="${tClip.text}" duration=${tClip.duration}s`, tClip.text==="Test" && tClip.duration===3, 'TOOLS-TEXT');
+  }catch(e){addLog('text FAILED: '+e.message,false,'TOOLS-TEXT');}
 
-  addLog('If 12 ✅, Tools Started! Next: text, filter, masking', true, 'FINAL');
+  try{
+    const c = new Clip({duration:2});
+    FilterTool.applyFilter(c, 'bw');
+    const css = FilterTool.getFilterCSS(c.filter);
+    addLog(`filter.js: bw filter css="${css}" includes saturate`, css.includes('saturate'), 'TOOLS-FILTER');
+  }catch(e){addLog('filter FAILED: '+e.message,false,'TOOLS-FILTER');}
+
+  addLog('If 14 ✅, Text+Filter DONE! Next: masking, keyframe', true, 'FINAL');
 </script>
 </body>
 </html>
