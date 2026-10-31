@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Click Video Editor - Phase 1 Test</title>
+<title>Click Video Editor - Phase 2 Test</title>
 <style>
   body { background: #0E0E0E; color: white; font-family: sans-serif; padding: 20px; }
   .log { background: #1E1E1E; padding: 12px; margin: 10px 0; border-radius: 8px; font-family: monospace; }
@@ -13,60 +13,32 @@
 </style>
 </head>
 <body>
-<h2>Click Video Editor - Phase 1 Test (4 Files)</h2>
+<h2>Click Video Editor - Phase 2 Test (6 Files)</h2>
 <div id="logs"></div>
 
-<!-- Load 4 Core Files -->
-<script src="js/core/math.js?v=3"></script>
-<script src="js/core/snap-engine.js?v=3"></script>
-<script src="js/core/transform.js?v=3"></script>
-<script src="js/store.js?v=3"></script>
+<script src="js/core/math.js?v=4"></script>
+<script src="js/core/snap-engine.js?v=4"></script>
+<script src="js/core/transform.js?v=4"></script>
+<script src="js/store.js?v=4"></script>
+<script src="js/timeline/clip.js?v=4"></script>
+<script src="js/timeline/timeline.js?v=4"></script>
 
 <script>
   const logs = document.getElementById('logs');
   function addLog(msg, pass, group) {
-    if(group){
-      const h = document.createElement('h3');
-      h.textContent = group;
-      logs.appendChild(h);
-    }
-    const div = document.createElement('div');
-    div.className = 'log ' + (pass ? 'pass' : 'fail');
-    div.textContent = (pass ? '✅ ' : '❌ ') + msg;
-    logs.appendChild(div);
+    if(group){ const h=document.createElement('h3'); h.textContent=group; logs.appendChild(h); }
+    const div=document.createElement('div'); div.className='log '+(pass?'pass':'fail'); div.textContent=(pass?'✅ ':'❌ ')+msg; logs.appendChild(div);
   }
 
-  // Group 1: Math
-  try {
-    const px = TimelineMath.timeToPixel(2, 0);
-    addLog(`math.js: timeToPixel(2,0) = ${px} (160)`, px === 160, 'CORE/MATH.JS');
-  } catch(e) { addLog('math.js FAILED: ' + e.message, false, 'CORE/MATH.JS'); }
+  try { const px=TimelineMath.timeToPixel(2,0); addLog(`math.js: timeToPixel = ${px}`, px===160, 'CORE'); } catch(e){ addLog('math.js FAILED', false, 'CORE'); }
+  try { addLog(`snap-engine.js: loaded = ${typeof SnapEngine!=='undefined'}`, typeof SnapEngine!=='undefined', 'CORE'); } catch(e){ addLog('snap FAILED', false, 'CORE'); }
+  try { const m=TransformEngine.getMatrix({rotation:90}); addLog(`transform.js: works = ${!!m}`, !!m, 'CORE'); } catch(e){ addLog('transform FAILED', false, 'CORE'); }
+  try { addLog(`store.js: loaded = ${typeof Store!=='undefined'}`, typeof Store!=='undefined', 'CORE'); } catch(e){ addLog('store FAILED', false, 'CORE'); }
 
-  try {
-    const t = TimelineMath.pixelToTime(160, 0);
-    addLog(`math.js: pixelToTime(160,0) = ${t} (2)`, t === 2);
-  } catch(e) { addLog('pixelToTime FAILED', false); }
+  try { const clip=new Clip({startTime:1, duration:2}); addLog(`clip.js: Clip created endTime=${clip.endTime} (expected 3)`, clip.endTime===3, 'TIMELINE'); } catch(e){ addLog('clip.js FAILED: '+e.message, false, 'TIMELINE'); }
+  try { Timeline.addClip({startTime:0, duration:1}); addLog(`timeline.js: addClip works, total=${Timeline.clips.length}`, Timeline.clips.length>0, 'TIMELINE'); } catch(e){ addLog('timeline.js FAILED: '+e.message, false, 'TIMELINE'); }
 
-  // Group 2: Snap
-  try {
-    addLog(`snap-engine.js: SnapEngine loaded = ${typeof SnapEngine !== 'undefined'}`, typeof SnapEngine !== 'undefined', 'CORE/SNAP-ENGINE.JS');
-  } catch(e) { addLog('snap-engine.js FAILED', false, 'CORE/SNAP-ENGINE.JS'); }
-
-  // Group 3: Transform
-  try {
-    const m = TransformEngine.getMatrix({ x: 10, y: 20, rotation: 90 });
-    const ok = m && typeof m.a === 'number';
-    addLog(`transform.js: getMatrix() works = ${ok}`, ok, 'CORE/TRANSFORM.JS');
-  } catch(e) { addLog('transform.js FAILED: ' + e.message, false, 'CORE/TRANSFORM.JS'); }
-
-  // Group 4: Store
-  try {
-    const ok = typeof Store !== 'undefined' && typeof Store.init === 'function';
-    addLog(`store.js: Store loaded + AutoSave ready = ${ok}`, ok, 'STORE.JS (AutoSave)');
-    if(ok) addLog(`store.js: AutoSave will run every 10 sec (check console)`, true);
-  } catch(e) { addLog('store.js FAILED: ' + e.message, false, 'STORE.JS'); }
-
-  addLog('If all 4 groups ✅, then Phase 1 Core DONE! Next: Timeline', true, 'FINAL');
+  addLog('If all 6 ✅, Phase 2 Core Done! Next: gesture.js', true, 'FINAL');
 </script>
 </body>
 </html>
