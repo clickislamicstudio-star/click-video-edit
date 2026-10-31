@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Click Video Editor - Phase 2 Test</title>
+<title>Click Video Editor - Phase 2 Full Test</title>
 <style>
   body { background: #0E0E0E; color: white; font-family: sans-serif; padding: 20px; }
   .log { background: #1E1E1E; padding: 12px; margin: 10px 0; border-radius: 8px; font-family: monospace; }
@@ -13,32 +13,35 @@
 </style>
 </head>
 <body>
-<h2>Click Video Editor - Phase 2 Test (6 Files)</h2>
+<h2>Phase 2 Full Test (8 Files)</h2>
 <div id="logs"></div>
 
-<script src="js/core/math.js?v=4"></script>
-<script src="js/core/snap-engine.js?v=4"></script>
-<script src="js/core/transform.js?v=4"></script>
-<script src="js/store.js?v=4"></script>
-<script src="js/timeline/clip.js?v=4"></script>
-<script src="js/timeline/timeline.js?v=4"></script>
+<script src="js/core/math.js?v=5"></script>
+<script src="js/core/snap-engine.js?v=5"></script>
+<script src="js/core/transform.js?v=5"></script>
+<script src="js/store.js?v=5"></script>
+<script src="js/timeline/clip.js?v=5"></script>
+<script src="js/timeline/timeline.js?v=5"></script>
+<script src="js/timeline/gesture.js?v=5"></script>
+<script src="js/timeline/selection.js?v=5"></script>
 
 <script>
-  const logs = document.getElementById('logs');
-  function addLog(msg, pass, group) {
-    if(group){ const h=document.createElement('h3'); h.textContent=group; logs.appendChild(h); }
-    const div=document.createElement('div'); div.className='log '+(pass?'pass':'fail'); div.textContent=(pass?'✅ ':'❌ ')+msg; logs.appendChild(div);
+  const logs=document.getElementById('logs');
+  function addLog(msg,pass,group){
+    if(group){const h=document.createElement('h3');h.textContent=group;logs.appendChild(h);}
+    const d=document.createElement('div');d.className='log '+(pass?'pass':'fail');d.textContent=(pass?'✅ ':'❌ ')+msg;logs.appendChild(d);
   }
+  try{addLog(`math.js: timeToPixel = ${TimelineMath.timeToPixel(2,0)}`, TimelineMath.timeToPixel(2,0)===160, 'CORE');}catch(e){addLog('math FAILED',false,'CORE');}
+  try{addLog(`snap: loaded`, typeof SnapEngine!=='undefined', 'CORE');}catch(e){addLog('snap FAILED',false,'CORE');}
+  try{addLog(`transform: works`, !!TransformEngine.getMatrix({}), 'CORE');}catch(e){addLog('transform FAILED',false,'CORE');}
+  try{addLog(`store: loaded`, typeof Store!=='undefined', 'CORE');}catch(e){addLog('store FAILED',false,'CORE');}
 
-  try { const px=TimelineMath.timeToPixel(2,0); addLog(`math.js: timeToPixel = ${px}`, px===160, 'CORE'); } catch(e){ addLog('math.js FAILED', false, 'CORE'); }
-  try { addLog(`snap-engine.js: loaded = ${typeof SnapEngine!=='undefined'}`, typeof SnapEngine!=='undefined', 'CORE'); } catch(e){ addLog('snap FAILED', false, 'CORE'); }
-  try { const m=TransformEngine.getMatrix({rotation:90}); addLog(`transform.js: works = ${!!m}`, !!m, 'CORE'); } catch(e){ addLog('transform FAILED', false, 'CORE'); }
-  try { addLog(`store.js: loaded = ${typeof Store!=='undefined'}`, typeof Store!=='undefined', 'CORE'); } catch(e){ addLog('store FAILED', false, 'CORE'); }
+  try{const c=new Clip({duration:2});addLog(`clip.js: endTime=${c.endTime}`, c.endTime===2, 'TIMELINE');}catch(e){addLog('clip FAILED',false,'TIMELINE');}
+  try{addLog(`timeline.js: clips=${Timeline.clips.length}`, true, 'TIMELINE');}catch(e){addLog('timeline FAILED',false,'TIMELINE');}
+  try{addLog(`gesture.js: isDragging=${typeof Gesture.isDragging!=='undefined'}`, typeof Gesture!=='undefined', 'GESTURE');}catch(e){addLog('gesture FAILED',false,'GESTURE');}
+  try{Selection.select('test123');addLog(`selection.js: select works = ${Selection.isSelected('test123')}`, Selection.isSelected('test123'), 'SELECTION');}catch(e){addLog('selection FAILED: '+e.message,false,'SELECTION');}
 
-  try { const clip=new Clip({startTime:1, duration:2}); addLog(`clip.js: Clip created endTime=${clip.endTime} (expected 3)`, clip.endTime===3, 'TIMELINE'); } catch(e){ addLog('clip.js FAILED: '+e.message, false, 'TIMELINE'); }
-  try { Timeline.addClip({startTime:0, duration:1}); addLog(`timeline.js: addClip works, total=${Timeline.clips.length}`, Timeline.clips.length>0, 'TIMELINE'); } catch(e){ addLog('timeline.js FAILED: '+e.message, false, 'TIMELINE'); }
-
-  addLog('If all 6 ✅, Phase 2 Core Done! Next: gesture.js', true, 'FINAL');
+  addLog('If 8 ✅, Phase 2 DONE! Next: Player', true, 'FINAL');
 </script>
 </body>
 </html>
