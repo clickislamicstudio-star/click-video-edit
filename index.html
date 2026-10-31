@@ -7,142 +7,39 @@
 <meta name="theme-color" content="#FF3B30">
 <link rel="manifest" href="manifest.json">
 <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#0E0E0E; color:white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow:hidden; height:100vh; display:flex; flex-direction:column; }
-  body.rtl { direction: rtl; }
-  
-  /* Header */
-  header { background:#1A1A1A; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2A2A2A; }
-  header h1 { font-size:18px; color:#FF3B30; }
-  .header-actions { display:flex; gap:8px; }
-  .btn { background:#2A2A2A; color:white; border:none; padding:8px 16px; border-radius:20px; font-size:14px; cursor:pointer; }
-  .btn-primary { background:#FF3B30; }
-  
-  /* Player Area */
-  #playerArea { flex:1; background:#000; display:flex; align-items:center; justify-content:center; position:relative; }
-  #playerCanvas { width:100%; max-width:400px; aspect-ratio:9/16; background:#111; border-radius:8px; display:flex; align-items:center; justify-content:center; }
-  #welcome { text-align:center; padding:20px; }
-  #welcome h1 { font-size:20px; margin-bottom:10px; color:#FF3B30; }
-  #welcome p { font-size:13px; color:#AAA; margin:4px 0; }
-  #exportProgress { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:#FF3B30; padding:8px 20px; border-radius:20px; display:none; font-size:14px; }
-  
-  /* Timeline */
-  #timelineArea { height:120px; background:#1E1E1E; border-top:1px solid #2A2A2A; padding:10px; overflow-x:auto; }
-  .timeline-track { height:28px; background:#2A2A2A; border-radius:6px; margin:4px 0; display:flex; align-items:center; padding:0 10px; font-size:12px; color:#888; }
-  .track-v1 { border-left:3px solid #FF3B30; }
-  .track-v2 { border-left:3px solid #4CAF50; }
-  .track-text { border-left:3px solid #2196F3; }
-  
-  /* Toolbar - InShot Style */
-  #toolbar { background:#1A1A1A; padding:10px 0; border-top:1px solid #2A2A2A; overflow-x:auto; white-space:nowrap; }
-  #toolbar::-webkit-scrollbar { display:none; }
-  .tool-group { display:inline-flex; gap:4px; padding:0 10px; }
-  .tool-btn { background:transparent; border:none; color:white; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 12px; border-radius:12px; min-width:60px; cursor:pointer; }
-  .tool-btn:active { background:#2A2A2A; transform:scale(0.95); }
-  .tool-icon { width:28px; height:28px; background:#2A2A2A; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; }
-  .tool-label { font-size:10px; color:#AAA; }
-  .tool-btn.active .tool-icon { background:#FF3B30; }
-  
-  /* Tool Panel */
-  #toolPanel { position:fixed; bottom:90px; left:10px; right:10px; background:#2A2A2A; border-radius:16px; padding:16px; transform:translateY(200%); transition:0.3s; z-index:10; }
-  #toolPanel.active { transform:translateY(0); }
-  
-  /* Test Badge */
-  #testBadge { position:fixed; top:60px; right:10px; background:#4CAF50; color:white; padding:6px 12px; border-radius:20px; font-size:11px; font-family:monospace; z-index:100; }
+  *{margin:0;padding:0;box-sizing:border-box}body{background:#0E0E0E;color:white;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}body.rtl{direction:rtl}
+  header{background:#1A1A1A;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2A2A2A}header h1{font-size:18px;color:#FF3B30}.header-actions{display:flex;gap:8px}.btn{background:#2A2A2A;color:white;border:none;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer}.btn-primary{background:#FF3B30}
+  #playerArea{flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow-y:auto}#playerCanvas{width:100%;max-width:400px;min-height:60vh;aspect-ratio:9/16;background:#111;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:10px}#welcome{text-align:center;padding:20px;width:100%}#welcome h1{font-size:20px;margin-bottom:10px;color:#FF3B30}#welcome p{font-size:13px;color:#AAA;margin:4px 0}#exportProgress{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#FF3B30;padding:8px 20px;border-radius:20px;display:none;font-size:14px;z-index:20}
+  #timelineArea{height:120px;background:#1E1E1E;border-top:1px solid #2A2A2A;padding:10px;overflow-x:auto}.timeline-track{height:28px;background:#2A2A2A;border-radius:6px;margin:4px 0;display:flex;align-items:center;padding:0 10px;font-size:12px;color:#888}.track-v1{border-left:3px solid #FF3B30}.track-v2{border-left:3px solid #4CAF50}.track-text{border-left:3px solid #2196F3}
+  #toolbar{background:#1A1A1A;padding:10px 0;border-top:1px solid #2A2A2A;overflow-x:auto;white-space:nowrap}#toolbar::-webkit-scrollbar{display:none}.tool-group{display:inline-flex;gap:4px;padding:0 10px}.tool-btn{background:transparent;border:none;color:white;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;border-radius:12px;min-width:60px;cursor:pointer}.tool-btn:active{background:#2A2A2A;transform:scale(0.95)}.tool-icon{width:28px;height:28px;background:#2A2A2A;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}.tool-label{font-size:10px;color:#AAA}.tool-btn.active .tool-icon{background:#FF3B30}
+  #toolPanel{position:fixed;bottom:90px;left:10px;right:10px;background:#2A2A2A;border-radius:16px;padding:16px;transform:translateY(200%);transition:0.3s;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,0.5)}#toolPanel.active{transform:translateY(0)}
+  #testBadge{position:fixed;top:60px;right:10px;background:#4CAF50;color:white;padding:6px 12px;border-radius:20px;font-size:11px;font-family:monospace;z-index:100}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
-
-<header>
-  <h1 data-i18n="app_name">Click Video Editor</h1>
-  <div class="header-actions">
-    <button class="btn" id="langBtn">EN</button>
-    <button class="btn btn-primary" id="exportBtn" data-i18n="export">Export</button>
-  </div>
-</header>
-
-<div id="playerArea">
-  <div id="playerCanvas">
-    <div id="welcome">
-      <h1>Loading...</h1>
-    </div>
-  </div>
-  <div id="exportProgress">Exporting 0%</div>
-  <div id="testBadge">✅ 22 Tools Loaded</div>
-</div>
-
-<div id="timelineArea">
-  <div class="timeline-track track-v1">V1 Main (Locked) - No Overlap</div>
-  <div class="timeline-track track-v2">V2 PIP/Overlay - Can Overlap</div>
-  <div class="timeline-track track-text">Text/Sticker (Top)</div>
-  <div class="timeline-track">A1 Audio + Waveform</div>
-</div>
-
-<div id="toolbar">
-  <div class="tool-group">
-    <button class="tool-btn" data-tool="trim"><div class="tool-icon">✂️</div><div class="tool-label" data-i18n="trim">Trim</div></button>
-    <button class="tool-btn" data-tool="split"><div class="tool-icon">🔪</div><div class="tool-label" data-i18n="split">Split</div></button>
-    <button class="tool-btn" data-tool="speed"><div class="tool-icon">⚡</div><div class="tool-label" data-i18n="speed">Speed</div></button>
-    <button class="tool-btn" data-tool="text"><div class="tool-icon">T</div><div class="tool-label" data-i18n="text">Text</div></button>
-    <button class="tool-btn" data-tool="filter"><div class="tool-icon">🎨</div><div class="tool-label" data-i18n="filter">Filter</div></button>
-    <button class="tool-btn" data-tool="masking"><div class="tool-icon">⭕</div><div class="tool-label" data-i18n="masking">Mask</div></button>
-    <button class="tool-btn" data-tool="chroma"><div class="tool-icon">🟩</div><div class="tool-label" data-i18n="chroma">Chroma</div></button>
-    <button class="tool-btn" data-tool="audio"><div class="tool-icon">🎵</div><div class="tool-label" data-i18n="audio">Audio</div></button>
-    <button class="tool-btn" data-tool="effects"><div class="tool-icon">✨</div><div class="tool-label" data-i18n="effects">Effects</div></button>
-    <button class="tool-btn" data-tool="captions"><div class="tool-icon">💬</div><div class="tool-label" data-i18n="captions">Captions</div></button>
-  </div>
-</div>
-
+<header><h1 data-i18n="app_name">Click Video Editor</h1><div class="header-actions"><button class="btn" id="langBtn">EN</button><button class="btn btn-primary" id="exportBtn" data-i18n="export">Export</button></div></header>
+<div id="playerArea"><div id="playerCanvas"><div id="welcome"><h1>Loading...</h1></div></div><div id="exportProgress">Exporting 0%</div><div id="testBadge">✅ 24 Files - Editor Ready!</div></div>
+<div id="timelineArea"><div class="timeline-track track-v1">V1 Main (Locked) - No Overlap</div><div class="timeline-track track-v2">V2 PIP/Overlay - Can Overlap</div><div class="timeline-track track-text">Text/Sticker (Top)</div><div class="timeline-track">A1 Audio + Waveform + Beats</div></div>
+<div id="toolbar"><div class="tool-group">
+<button class="tool-btn" data-tool="trim"><div class="tool-icon">✂️</div><div class="tool-label">Trim</div></button>
+<button class="tool-btn" data-tool="split"><div class="tool-icon">🔪</div><div class="tool-label">Split</div></button>
+<button class="tool-btn" data-tool="speed"><div class="tool-icon">⚡</div><div class="tool-label">Speed</div></button>
+<button class="tool-btn" data-tool="text"><div class="tool-icon">T</div><div class="tool-label">Text</div></button>
+<button class="tool-btn" data-tool="filter"><div class="tool-icon">🎨</div><div class="tool-label">Filter</div></button>
+<button class="tool-btn" data-tool="masking"><div class="tool-icon">⭕</div><div class="tool-label">Mask</div></button>
+<button class="tool-btn" data-tool="chroma"><div class="tool-icon">🟩</div><div class="tool-label">Chroma</div></button>
+<button class="tool-btn" data-tool="audio"><div class="tool-icon">🎵</div><div class="tool-label">Audio</div></button>
+<button class="tool-btn" data-tool="effects"><div class="tool-icon">✨</div><div class="tool-label">Effects</div></button>
+<button class="tool-btn" data-tool="captions"><div class="tool-icon">💬</div><div class="tool-label">Captions</div></button>
+</div></div>
 <div id="toolPanel">Tool Panel</div>
-
-<!-- Core -->
-<script src="js/core/math.js?v=final"></script>
-<script src="js/core/snap-engine.js?v=final"></script>
-<script src="js/core/transform.js?v=final"></script>
-<script src="js/core/keyframe.js?v=final"></script>
-<script src="js/core/i18n.js?v=final"></script>
-<script src="js/store.js?v=final"></script>
-<script src="js/hardware.js?v=final"></script>
-<!-- Timeline -->
-<script src="js/timeline/clip.js?v=final"></script>
-<script src="js/timeline/timeline.js?v=final"></script>
-<script src="js/timeline/gesture.js?v=final"></script>
-<script src="js/timeline/selection.js?v=final"></script>
-<!-- Player -->
-<script src="js/player/player.js?v=final"></script>
-<script src="js/player/renderer.js?v=final"></script>
-<!-- Tools -->
-<script src="js/tools/trim-split.js?v=final"></script>
-<script src="js/tools/speed.js?v=final"></script>
-<script src="js/tools/text.js?v=final"></script>
-<script src="js/tools/filter.js?v=final"></script>
-<script src="js/tools/masking.js?v=final"></script>
-<script src="js/tools/chroma.js?v=final"></script>
-<script src="js/tools/audio.js?v=final"></script>
-<script src="js/tools/effects.js?v=final"></script>
-<script src="js/tools/captions.js?v=final"></script>
-<!-- Export -->
-<script src="js/export/export.js?v=final"></script>
-<!-- Main App -->
-<script src="js/app.js?v=final"></script>
-
+<script src="js/core/math.js?v=final2"></script><script src="js/core/snap-engine.js?v=final2"></script><script src="js/core/transform.js?v=final2"></script><script src="js/core/keyframe.js?v=final2"></script><script src="js/core/i18n.js?v=final2"></script><script src="js/store.js?v=final2"></script><script src="js/hardware.js?v=final2"></script><script src="js/timeline/clip.js?v=final2"></script><script src="js/timeline/timeline.js?v=final2"></script><script src="js/timeline/gesture.js?v=final2"></script><script src="js/timeline/selection.js?v=final2"></script><script src="js/player/player.js?v=final2"></script><script src="js/player/renderer.js?v=final2"></script><script src="js/tools/trim-split.js?v=final2"></script><script src="js/tools/speed.js?v=final2"></script><script src="js/tools/text.js?v=final2"></script><script src="js/tools/filter.js?v=final2"></script><script src="js/tools/masking.js?v=final2"></script><script src="js/tools/chroma.js?v=final2"></script><script src="js/tools/audio.js?v=final2"></script><script src="js/tools/effects.js?v=final2"></script><script src="js/tools/captions.js?v=final2"></script><script src="js/export/export.js?v=final2"></script><script src="js/app.js?v=final2"></script>
 <script>
-  // Final verification - all 24 files
-  setTimeout(()=>{
-    const all = ['TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','I18n','Store','HardwareDetector','Clip','Timeline','Gesture','Selection','Player','Renderer','TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool','ExportEngine','App'];
-    const missing = all.filter(n => typeof window[n] === 'undefined');
-    const badge = document.getElementById('testBadge');
-    if(missing.length===0) {
-      badge.textContent = '✅ 24 Files - Editor Ready!';
-      badge.style.background = '#4CAF50';
-      console.log('🎉 ALL 24 FILES LOADED - CLICK EDITOR READY!');
-    } else {
-      badge.textContent = '❌ Missing: ' + missing.join(',');
-      badge.style.background = '#FF3B30';
-      console.error('Missing:', missing);
-    }
-  }, 1000);
+// PWA Register
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').then(()=>console.log('PWA Ready')).catch(()=>{});}
+// Final check
+setTimeout(()=>{const all=['TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','I18n','Store','HardwareDetector','Clip','Timeline','Gesture','Selection','Player','Renderer','TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool','ExportEngine','App'];const missing=all.filter(n=>typeof window[n]==='undefined');const badge=document.getElementById('testBadge');if(missing.length===0){badge.textContent='✅ 24 Files - Editor Ready!';badge.style.background='#4CAF50';}else{badge.textContent='❌ Missing: '+missing.join(',');badge.style.background='#FF3B30';}},1500);
 </script>
-
 </body>
 </html>
