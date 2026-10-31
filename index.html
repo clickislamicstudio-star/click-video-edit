@@ -3,43 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Click Video Editor - FREE Forever</title>
+<title>Click Video Editor - v1.1 Import + Waveform</title>
 <meta name="theme-color" content="#FF3B30">
 <link rel="manifest" href="manifest.json">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}body{background:#0E0E0E;color:white;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}body.rtl{direction:rtl}
+  *{margin:0;padding:0;box-sizing:border-box}body{background:#0E0E0E;color:white;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
   header{background:#1A1A1A;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2A2A2A}header h1{font-size:18px;color:#FF3B30}.header-actions{display:flex;gap:8px}.btn{background:#2A2A2A;color:white;border:none;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer}.btn-primary{background:#FF3B30}
-  #playerArea{flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow-y:auto}#playerCanvas{width:100%;max-width:400px;min-height:60vh;aspect-ratio:9/16;background:#111;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:10px}#welcome{text-align:center;padding:20px;width:100%}#welcome h1{font-size:20px;margin-bottom:10px;color:#FF3B30}#welcome p{font-size:13px;color:#AAA;margin:4px 0}#exportProgress{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#FF3B30;padding:8px 20px;border-radius:20px;display:none;font-size:14px;z-index:20}
-  #timelineArea{height:120px;background:#1E1E1E;border-top:1px solid #2A2A2A;padding:10px;overflow-x:auto}.timeline-track{height:28px;background:#2A2A2A;border-radius:6px;margin:4px 0;display:flex;align-items:center;padding:0 10px;font-size:12px;color:#888}.track-v1{border-left:3px solid #FF3B30}.track-v2{border-left:3px solid #4CAF50}.track-text{border-left:3px solid #2196F3}
-  #toolbar{background:#1A1A1A;padding:10px 0;border-top:1px solid #2A2A2A;overflow-x:auto;white-space:nowrap}#toolbar::-webkit-scrollbar{display:none}.tool-group{display:inline-flex;gap:4px;padding:0 10px}.tool-btn{background:transparent;border:none;color:white;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;border-radius:12px;min-width:60px;cursor:pointer}.tool-btn:active{background:#2A2A2A;transform:scale(0.95)}.tool-icon{width:28px;height:28px;background:#2A2A2A;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}.tool-label{font-size:10px;color:#AAA}.tool-btn.active .tool-icon{background:#FF3B30}
-  #toolPanel{position:fixed;bottom:90px;left:10px;right:10px;background:#2A2A2A;border-radius:16px;padding:16px;transform:translateY(200%);transition:0.3s;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,0.5)}#toolPanel.active{transform:translateY(0)}
+  #playerArea{flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow-y:auto}#playerCanvas{width:100%;max-width:400px;min-height:60vh;aspect-ratio:9/16;background:#111;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:10px;flex-direction:column}#welcome{text-align:center;padding:20px;width:100%}#importBtn{background:#FF3B30;color:white;border:none;padding:14px 28px;border-radius:30px;font-size:16px;margin:15px 0;cursor:pointer;box-shadow:0 4px 15px rgba(255,59,48,0.4)}#importBtn:active{transform:scale(0.95)}
+  #timelineArea{height:130px;background:#1E1E1E;border-top:1px solid #2A2A2A;padding:10px;overflow-x:auto}.timeline-track{height:28px;background:#2A2A2A;border-radius:6px;margin:4px 0;display:flex;align-items:center;padding:0 10px;font-size:12px;color:#888;position:relative;overflow:hidden}.track-v1{border-left:3px solid #FF3B30}.track-clip{background:#FF3B30;height:100%;border-radius:4px;display:flex;align-items:center;padding:0 6px;color:white;font-size:10px;position:absolute;left:0;top:0}
+  #toolbar{background:#1A1A1A;padding:10px 0;border-top:1px solid #2A2A2A;overflow-x:auto;white-space:nowrap}.tool-group{display:inline-flex;gap:4px;padding:0 10px}.tool-btn{background:transparent;border:none;color:white;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;border-radius:12px;min-width:60px;cursor:pointer}.tool-icon{width:28px;height:28px;background:#2A2A2A;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}.tool-label{font-size:10px;color:#AAA}
+  #toolPanel{position:fixed;bottom:90px;left:10px;right:10px;background:#2A2A2A;border-radius:16px;padding:16px;transform:translateY(200%);transition:0.3s;z-index:10}#toolPanel.active{transform:translateY(0)}
   #testBadge{position:fixed;top:60px;right:10px;background:#4CAF50;color:white;padding:6px 12px;border-radius:20px;font-size:11px;font-family:monospace;z-index:100}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  canvas.waveform{width:100%;height:100%;}
 </style>
 </head>
 <body>
-<header><h1 data-i18n="app_name">Click Video Editor</h1><div class="header-actions"><button class="btn" id="langBtn">EN</button><button class="btn btn-primary" id="exportBtn" data-i18n="export">Export</button></div></header>
-<div id="playerArea"><div id="playerCanvas"><div id="welcome"><h1>Loading...</h1></div></div><div id="exportProgress">Exporting 0%</div><div id="testBadge">✅ 24 Files - Editor Ready!</div></div>
-<div id="timelineArea"><div class="timeline-track track-v1">V1 Main (Locked) - No Overlap</div><div class="timeline-track track-v2">V2 PIP/Overlay - Can Overlap</div><div class="timeline-track track-text">Text/Sticker (Top)</div><div class="timeline-track">A1 Audio + Waveform + Beats</div></div>
+<header><h1>Click Video Editor v1.1</h1><div class="header-actions"><button class="btn" id="langBtn">EN</button><button class="btn btn-primary" id="exportBtn">Export</button></div></header>
+<div id="playerArea">
+  <div id="playerCanvas">
+    <div id="welcome">
+      <h2 style="color:#FF3B30">Import Media to Start</h2>
+      <button id="importBtn">📁 Import Video/Audio</button>
+      <p style="color:#888;font-size:12px;">Gallery -> Timeline V1</p>
+      <div id="waveformPreview" style="width:100%;height:60px;background:#1E1E1E;border-radius:8px;margin-top:10px;display:none;"><canvas id="waveCanvas" width="300" height="60" style="width:100%;height:100%"></canvas></div>
+    </div>
+  </div>
+  <div id="testBadge">✅ 26 Files - v1.1</div>
+</div>
+<div id="timelineArea">
+  <div class="timeline-track track-v1" id="trackV1">V1 Main - No clips yet. Import to add.</div>
+  <div class="timeline-track" id="trackA1">A1 Audio - Waveform will show here</div>
+</div>
 <div id="toolbar"><div class="tool-group">
 <button class="tool-btn" data-tool="trim"><div class="tool-icon">✂️</div><div class="tool-label">Trim</div></button>
-<button class="tool-btn" data-tool="split"><div class="tool-icon">🔪</div><div class="tool-label">Split</div></button>
 <button class="tool-btn" data-tool="speed"><div class="tool-icon">⚡</div><div class="tool-label">Speed</div></button>
 <button class="tool-btn" data-tool="text"><div class="tool-icon">T</div><div class="tool-label">Text</div></button>
 <button class="tool-btn" data-tool="filter"><div class="tool-icon">🎨</div><div class="tool-label">Filter</div></button>
-<button class="tool-btn" data-tool="masking"><div class="tool-icon">⭕</div><div class="tool-label">Mask</div></button>
-<button class="tool-btn" data-tool="chroma"><div class="tool-icon">🟩</div><div class="tool-label">Chroma</div></button>
 <button class="tool-btn" data-tool="audio"><div class="tool-icon">🎵</div><div class="tool-label">Audio</div></button>
-<button class="tool-btn" data-tool="effects"><div class="tool-icon">✨</div><div class="tool-label">Effects</div></button>
 <button class="tool-btn" data-tool="captions"><div class="tool-icon">💬</div><div class="tool-label">Captions</div></button>
 </div></div>
-<div id="toolPanel">Tool Panel</div>
-<script src="js/core/math.js?v=final2"></script><script src="js/core/snap-engine.js?v=final2"></script><script src="js/core/transform.js?v=final2"></script><script src="js/core/keyframe.js?v=final2"></script><script src="js/core/i18n.js?v=final2"></script><script src="js/store.js?v=final2"></script><script src="js/hardware.js?v=final2"></script><script src="js/timeline/clip.js?v=final2"></script><script src="js/timeline/timeline.js?v=final2"></script><script src="js/timeline/gesture.js?v=final2"></script><script src="js/timeline/selection.js?v=final2"></script><script src="js/player/player.js?v=final2"></script><script src="js/player/renderer.js?v=final2"></script><script src="js/tools/trim-split.js?v=final2"></script><script src="js/tools/speed.js?v=final2"></script><script src="js/tools/text.js?v=final2"></script><script src="js/tools/filter.js?v=final2"></script><script src="js/tools/masking.js?v=final2"></script><script src="js/tools/chroma.js?v=final2"></script><script src="js/tools/audio.js?v=final2"></script><script src="js/tools/effects.js?v=final2"></script><script src="js/tools/captions.js?v=final2"></script><script src="js/export/export.js?v=final2"></script><script src="js/app.js?v=final2"></script>
+<div id="toolPanel"></div>
+
+<script src="js/core/math.js?v=13"></script><script src="js/core/snap-engine.js?v=13"></script><script src="js/core/transform.js?v=13"></script><script src="js/core/keyframe.js?v=13"></script><script src="js/core/i18n.js?v=13"></script><script src="js/core/waveform.js?v=13"></script><script src="js/store.js?v=13"></script><script src="js/hardware.js?v=13"></script><script src="js/timeline/clip.js?v=13"></script><script src="js/timeline/timeline.js?v=13"></script><script src="js/timeline/gesture.js?v=13"></script><script src="js/timeline/selection.js?v=13"></script><script src="js/player/player.js?v=13"></script><script src="js/player/renderer.js?v=13"></script><script src="js/tools/trim-split.js?v=13"></script><script src="js/tools/speed.js?v=13"></script><script src="js/tools/text.js?v=13"></script><script src="js/tools/filter.js?v=13"></script><script src="js/tools/masking.js?v=13"></script><script src="js/tools/chroma.js?v=13"></script><script src="js/tools/audio.js?v=13"></script><script src="js/tools/effects.js?v=13"></script><script src="js/tools/captions.js?v=13"></script><script src="js/tools/media-import.js?v=13"></script><script src="js/export/export.js?v=13"></script><script src="js/app.js?v=13"></script>
+
 <script>
-// PWA Register
-if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').then(()=>console.log('PWA Ready')).catch(()=>{});}
-// Final check
-setTimeout(()=>{const all=['TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','I18n','Store','HardwareDetector','Clip','Timeline','Gesture','Selection','Player','Renderer','TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool','ExportEngine','App'];const missing=all.filter(n=>typeof window[n]==='undefined');const badge=document.getElementById('testBadge');if(missing.length===0){badge.textContent='✅ 24 Files - Editor Ready!';badge.style.background='#4CAF50';}else{badge.textContent='❌ Missing: '+missing.join(',');badge.style.background='#FF3B30';}},1500);
+// Wire import button
+document.getElementById('importBtn')?.addEventListener('click', async () => {
+  const clips = await MediaImportTool.importToTimeline();
+  const trackV1 = document.getElementById('trackV1');
+  if(trackV1 && clips.length>0) {
+    trackV1.innerHTML = clips.map(c=>`<div class="track-clip" style="width:${Math.min(100, c.duration*10)}%">${c.name.substr(0,15)} ${c.duration.toFixed(1)}s</div>`).join('');
+    // Show waveform
+    if(clips[0].waveform) {
+      const preview = document.getElementById('waveformPreview');
+      const canvas = document.getElementById('waveCanvas');
+      if(preview && canvas) {
+        preview.style.display='block';
+        WaveformEngine.drawWaveform(canvas, clips[0].waveform, '#FF3B30');
+      }
+    }
+  }
+});
+// Final check 26 files
+setTimeout(()=>{const all=['TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','I18n','WaveformEngine','Store','HardwareDetector','Clip','Timeline','Gesture','Selection','Player','Renderer','TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool','MediaImportTool','ExportEngine','App'];const missing=all.filter(n=>typeof window[n]==='undefined');const badge=document.getElementById('testBadge');if(missing.length===0){badge.textContent='✅ 26 Files - v1.1 Ready!';badge.style.background='#4CAF50';}else{badge.textContent='❌ Missing: '+missing.join(',');badge.style.background='#FF3B30';}},1500);
 </script>
 </body>
 </html>
