@@ -1,9 +1,8 @@
 /**
- * js/tools/effects.js - Visual Effects (VHS, Glitch, RGB Split, etc)
- * Blend Modes: Normal, Multiply, Screen, Overlay...
+ * js/tools/effects.js - Visual Effects FIXED
+ * Bug Fix: clip.effects was object, now handles both
  */
 const EffectsTool = {
-  // All InShot + 【entity-CapCut¦canonical_name=CapCut】 effects
   presets: {
     vhs: { name: "VHS", type: "vhs", intensity: 0.5, scanlines: 0.3 },
     glitch: { name: "Glitch", type: "glitch", intensity: 0.6, offset: 10 },
@@ -23,7 +22,11 @@ const EffectsTool = {
     const preset = this.presets[effectName];
     if(!preset) return clip;
     
-    if(!clip.effects) clip.effects = [];
+    // FIX: Ensure effects is always an array
+    if(!clip.effects || !Array.isArray(clip.effects)) {
+      clip.effects = [];
+    }
+    
     clip.effects.push({
       id: 'fx_' + Date.now(),
       name: effectName,
@@ -35,7 +38,10 @@ const EffectsTool = {
   },
 
   removeEffect(clip, effectId) {
-    if(!clip.effects) return clip;
+    if(!clip.effects || !Array.isArray(clip.effects)) {
+      clip.effects = [];
+      return clip;
+    }
     clip.effects = clip.effects.filter(e => e.id !== effectId);
     return clip;
   },
@@ -46,7 +52,6 @@ const EffectsTool = {
     return clip;
   },
 
-  // For canvas rendering
   getEffectCSS(effect) {
     if(!effect || !effect.enabled) return "";
     switch(effect.type) {
@@ -56,7 +61,6 @@ const EffectsTool = {
     }
   },
 
-  // Motion Blur 0-100
   setMotionBlur(clip, value) {
     clip.motionBlur = Math.max(0, Math.min(100, value));
     return clip;
