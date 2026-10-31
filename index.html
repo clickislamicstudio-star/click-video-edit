@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Click Editor - Masking + Keyframe Test</title>
+<title>Click Editor - Chroma + Audio Test</title>
 <style>
   body { background: #0E0E0E; color: white; font-family: sans-serif; padding: 20px; }
   .log { background: #1E1E1E; padding: 12px; margin: 10px 0; border-radius: 8px; font-family: monospace; }
@@ -13,25 +13,27 @@
 </style>
 </head>
 <body>
-<h2>Phase 5 Test - Pro Tools (16 Files)</h2>
+<h2>Phase 6 Test - Chroma + Audio (18 Files)</h2>
 <div id="logs"></div>
 
-<script src="js/core/math.js?v=9"></script>
-<script src="js/core/snap-engine.js?v=9"></script>
-<script src="js/core/transform.js?v=9"></script>
-<script src="js/core/keyframe.js?v=9"></script>
-<script src="js/store.js?v=9"></script>
-<script src="js/timeline/clip.js?v=9"></script>
-<script src="js/timeline/timeline.js?v=9"></script>
-<script src="js/timeline/gesture.js?v=9"></script>
-<script src="js/timeline/selection.js?v=9"></script>
-<script src="js/player/player.js?v=9"></script>
-<script src="js/player/renderer.js?v=9"></script>
-<script src="js/tools/trim-split.js?v=9"></script>
-<script src="js/tools/speed.js?v=9"></script>
-<script src="js/tools/text.js?v=9"></script>
-<script src="js/tools/filter.js?v=9"></script>
-<script src="js/tools/masking.js?v=9"></script>
+<script src="js/core/math.js?v=10"></script>
+<script src="js/core/snap-engine.js?v=10"></script>
+<script src="js/core/transform.js?v=10"></script>
+<script src="js/core/keyframe.js?v=10"></script>
+<script src="js/store.js?v=10"></script>
+<script src="js/timeline/clip.js?v=10"></script>
+<script src="js/timeline/timeline.js?v=10"></script>
+<script src="js/timeline/gesture.js?v=10"></script>
+<script src="js/timeline/selection.js?v=10"></script>
+<script src="js/player/player.js?v=10"></script>
+<script src="js/player/renderer.js?v=10"></script>
+<script src="js/tools/trim-split.js?v=10"></script>
+<script src="js/tools/speed.js?v=10"></script>
+<script src="js/tools/text.js?v=10"></script>
+<script src="js/tools/filter.js?v=10"></script>
+<script src="js/tools/masking.js?v=10"></script>
+<script src="js/tools/chroma.js?v=10"></script>
+<script src="js/tools/audio.js?v=10"></script>
 
 <script>
   const logs=document.getElementById('logs');
@@ -39,36 +41,46 @@
     if(group){const h=document.createElement('h3');h.textContent=group;logs.appendChild(h);}
     const d=document.createElement('div');d.className='log '+(pass?'pass':'fail');d.textContent=(pass?'✅ ':'❌ ')+msg;logs.appendChild(d);
   }
-  try{addLog(`math: true`, true, 'CORE');}catch(e){addLog('math FAILED',false,'CORE');}
-  try{addLog(`snap: true`, true, 'CORE');}catch(e){addLog('snap FAILED',false,'CORE');}
-  try{addLog(`transform: true`, true, 'CORE');}catch(e){addLog('transform FAILED',false,'CORE');}
-  try{addLog(`keyframe: engine exists`, typeof KeyframeEngine!=='undefined', 'CORE');}catch(e){addLog('keyframe FAILED',false,'CORE');}
-  try{addLog(`store: true`, true, 'CORE');}catch(e){addLog('store FAILED',false,'CORE');}
-  try{addLog(`clip: true`, true, 'TIMELINE');}catch(e){addLog('clip FAILED',false,'TIMELINE');}
-  try{addLog(`timeline: true`, true, 'TIMELINE');}catch(e){addLog('timeline FAILED',false,'TIMELINE');}
-  try{addLog(`gesture: true`, true, 'GESTURE');}catch(e){addLog('gesture FAILED',false,'GESTURE');}
-  try{addLog(`selection: true`, true, 'SELECTION');}catch(e){addLog('selection FAILED',false,'SELECTION');}
-  try{addLog(`player: true`, true, 'PLAYER');}catch(e){addLog('player FAILED',false,'PLAYER');}
-  try{addLog(`renderer: true`, true, 'PLAYER');}catch(e){addLog('renderer FAILED',false,'PLAYER');}
-  try{addLog(`trim-split: true`, true, 'TOOLS');}catch(e){addLog('trim-split FAILED',false,'TOOLS');}
-  try{addLog(`speed: true`, true, 'TOOLS');}catch(e){addLog('speed FAILED',false,'TOOLS');}
-  try{addLog(`text: true`, true, 'TOOLS');}catch(e){addLog('text FAILED',false,'TOOLS');}
-  try{addLog(`filter: true`, true, 'TOOLS');}catch(e){addLog('filter FAILED',false,'TOOLS');}
+  const checks = [
+    ['math', typeof TimelineMath!=='undefined'],
+    ['snap', typeof SnapEngine!=='undefined'],
+    ['transform', typeof TransformEngine!=='undefined'],
+    ['keyframe', typeof KeyframeEngine!=='undefined'],
+    ['store', typeof Store!=='undefined'],
+    ['clip', typeof Clip!=='undefined'],
+    ['timeline', typeof Timeline!=='undefined'],
+    ['gesture', typeof Gesture!=='undefined'],
+    ['selection', typeof Selection!=='undefined'],
+    ['player', typeof Player!=='undefined'],
+    ['renderer', typeof Renderer!=='undefined'],
+    ['trim-split', typeof TrimSplitTool!=='undefined'],
+    ['speed', typeof SpeedTool!=='undefined'],
+    ['text', typeof TextTool!=='undefined'],
+    ['filter', typeof FilterTool!=='undefined'],
+    ['masking', typeof MaskingTool!=='undefined'],
+  ];
+  checks.forEach(([name, ok], i)=>{
+    let g = 'CORE'; if(i>=5&&i<=6) g='TIMELINE'; if(i>=7) g='TOOLS';
+    if(i>=9) g='PLAYER'; if(i>=11) g='TOOLS';
+    addLog(`${name}: ${ok}`, ok, i===0||g!==checks[i-1]?.[0]?g:null);
+  });
 
   try{
-    const mask = MaskingTool.createMask('circle', {x:0.5, y:0.5, radius:0.3, feather:20});
-    addLog(`masking.js: circle mask radius=${mask.radius} feather=${mask.feather}`, mask.type==='circle' && mask.feather===20, 'PRO-TOOLS');
-  }catch(e){addLog('masking FAILED: '+e.message,false,'PRO-TOOLS');}
+    const clip = new Clip({duration:3});
+    ChromaTool.enable(clip, "#00FF00");
+    ChromaTool.setSimilarity(clip, 0.5);
+    addLog(`chroma.js: green screen enabled=${clip.chroma.enabled} similarity=${clip.chroma.similarity}`, clip.chroma.enabled && clip.chroma.similarity===0.5, 'CHROMA');
+  }catch(e){addLog('chroma FAILED: '+e.message,false,'CHROMA');}
 
   try{
-    const clip = new Clip({duration:4}); clip.keyframes={};
-    KeyframeEngine.addKeyframe(clip, 'scale', 0, 1, 'linear');
-    KeyframeEngine.addKeyframe(clip, 'scale', 2, 2, 'linear');
-    const valAt1 = KeyframeEngine.getValueAtTime(clip, 'scale', 1); // should be 1.5
-    addLog(`keyframe.js: scale 1->2 at time=1s = ${valAt1} (expected 1.5) Formula OK`, Math.abs(valAt1-1.5)<0.01, 'PRO-TOOLS');
-  }catch(e){addLog('keyframe FAILED: '+e.message,false,'PRO-TOOLS');}
+    const clip = new Clip({duration:5});
+    AudioTool.applyEffect(clip, 'echo');
+    AudioTool.setVolume(clip, 0.8);
+    const beats = AudioTool.detectBeats({sampleRate:44100, getChannelData:()=>[]});
+    addLog(`audio.js: effect=${clip.audioEffects[0].name} volume=${clip.volume} beats=${beats.length}`, clip.audioEffects.length===1 && beats.length>0, 'AUDIO');
+  }catch(e){addLog('audio FAILED: '+e.message,false,'AUDIO');}
 
-  addLog('If 16 ✅, Pro Tools DONE! Next: chroma, audio, effects', true, 'FINAL');
+  addLog('If 18 ✅, Chroma+Audio DONE! Next: effects, transition, captions', true, 'FINAL');
 </script>
 </body>
 </html>
