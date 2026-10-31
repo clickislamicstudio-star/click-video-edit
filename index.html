@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Click Editor - Effects + Captions Test</title>
+<title>Click Editor - Export + Hardware Test</title>
 <style>
   body { background: #0E0E0E; color: white; font-family: sans-serif; padding: 20px; }
   .log { background: #1E1E1E; padding: 12px; margin: 10px 0; border-radius: 8px; font-family: monospace; }
@@ -13,29 +13,31 @@
 </style>
 </head>
 <body>
-<h2>Phase 7 Test - Effects + Auto Captions (20 Files)</h2>
+<h2>Phase 8 Test - Export + Hardware (22 Files)</h2>
 <div id="logs"></div>
 
-<script src="js/core/math.js?v=11"></script>
-<script src="js/core/snap-engine.js?v=11"></script>
-<script src="js/core/transform.js?v=11"></script>
-<script src="js/core/keyframe.js?v=11"></script>
-<script src="js/store.js?v=11"></script>
-<script src="js/timeline/clip.js?v=11"></script>
-<script src="js/timeline/timeline.js?v=11"></script>
-<script src="js/timeline/gesture.js?v=11"></script>
-<script src="js/timeline/selection.js?v=11"></script>
-<script src="js/player/player.js?v=11"></script>
-<script src="js/player/renderer.js?v=11"></script>
-<script src="js/tools/trim-split.js?v=11"></script>
-<script src="js/tools/speed.js?v=11"></script>
-<script src="js/tools/text.js?v=11"></script>
-<script src="js/tools/filter.js?v=11"></script>
-<script src="js/tools/masking.js?v=11"></script>
-<script src="js/tools/chroma.js?v=11"></script>
-<script src="js/tools/audio.js?v=11"></script>
-<script src="js/tools/effects.js?v=11"></script>
-<script src="js/tools/captions.js?v=11"></script>
+<script src="js/core/math.js?v=12"></script>
+<script src="js/core/snap-engine.js?v=12"></script>
+<script src="js/core/transform.js?v=12"></script>
+<script src="js/core/keyframe.js?v=12"></script>
+<script src="js/store.js?v=12"></script>
+<script src="js/hardware.js?v=12"></script>
+<script src="js/timeline/clip.js?v=12"></script>
+<script src="js/timeline/timeline.js?v=12"></script>
+<script src="js/timeline/gesture.js?v=12"></script>
+<script src="js/timeline/selection.js?v=12"></script>
+<script src="js/player/player.js?v=12"></script>
+<script src="js/player/renderer.js?v=12"></script>
+<script src="js/tools/trim-split.js?v=12"></script>
+<script src="js/tools/speed.js?v=12"></script>
+<script src="js/tools/text.js?v=12"></script>
+<script src="js/tools/filter.js?v=12"></script>
+<script src="js/tools/masking.js?v=12"></script>
+<script src="js/tools/chroma.js?v=12"></script>
+<script src="js/tools/audio.js?v=12"></script>
+<script src="js/tools/effects.js?v=12"></script>
+<script src="js/tools/captions.js?v=12"></script>
+<script src="js/export/export.js?v=12"></script>
 
 <script>
   const logs=document.getElementById('logs');
@@ -43,35 +45,30 @@
     if(group){const h=document.createElement('h3');h.textContent=group;logs.appendChild(h);}
     const d=document.createElement('div');d.className='log '+(pass?'pass':'fail');d.textContent=(pass?'✅ ':'❌ ')+msg;logs.appendChild(d);
   }
-  const core = [
-    'TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','Store','Clip','Timeline','Gesture','Selection','Player','Renderer',
-    'TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool'
+  const all = [
+    'TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','Store','HardwareDetector','Clip','Timeline','Gesture','Selection','Player','Renderer',
+    'TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool','ExportEngine'
   ];
-  core.forEach((name,i)=>{
+  all.forEach((name,i)=>{
     const exists = typeof window[name] !== 'undefined';
-    let g='CORE'; if(i>=5&&i<=8) g='TIMELINE'; if(i>=9) g='PLAYER'; if(i>=11) g='TOOLS';
-    addLog(`${name.toLowerCase()}: ${exists?'true':'false'}`, exists, i%4===0?g:null);
+    addLog(`${name.toLowerCase()}: ${exists}`, exists, i%5===0?name:null);
   });
 
   try{
-    const clip = new Clip({duration:3});
-    EffectsTool.applyEffect(clip, 'vhs', 0.7);
-    EffectsTool.setBlendMode(clip, 'screen');
-    EffectsTool.setMotionBlur(clip, 50);
-    addLog(`effects.js: vhs intensity=${clip.effects[0].intensity} blend=${clip.blendMode} blur=${clip.motionBlur}`, clip.effects[0].intensity===0.7 && clip.blendMode==='screen', 'EFFECTS');
-  }catch(e){addLog('effects FAILED: '+e.message,false,'EFFECTS');}
+    const mockProject = { duration: 15, clips: [] };
+    const job = ExportEngine.addToQueue(mockProject, "1080p");
+    const canShowAdAfterExport = ExportEngine.shouldShowAd("after_export");
+    const shouldNotShowDuringEdit = !ExportEngine.shouldShowAd("during_edit");
+    addLog(`export.js: queue job=${job.presetName} adAfterExport=${canShowAdAfterExport} noAdDuringEdit=${shouldNotShowDuringEdit}`, job && canShowAdAfterExport && shouldNotShowDuringEdit, 'EXPORT');
+  }catch(e){addLog('export FAILED: '+e.message,false,'EXPORT');}
 
   try{
-    (async()=>{
-      const mockAudio = { sampleRate:44100 };
-      const transcription = await CaptionsTool.transcribe(mockAudio, 'ur');
-      const captionClips = CaptionsTool.createCaptionClips(transcription, 'bold');
-      const srt = CaptionsTool.exportSRT(transcription);
-      addLog(`captions.js: Whisper transcribed ${transcription.length} segments, created ${captionClips.length} clips, SRT length=${srt.length} (Urdu/English/Arabic FREE)`, transcription.length===3 && captionClips.length===3, 'CAPTIONS');
-    })();
-  }catch(e){addLog('captions FAILED: '+e.message,false,'CAPTIONS');}
+    const info = HardwareDetector.info;
+    const canHandle720 = HardwareDetector.canHandle("720p");
+    addLog(`hardware.js: RAM=${info.ram}GB cores=${info.cores} max=${info.maxPreset} can720p=${canHandle720}`, info.ram>0 && canHandle720, 'HARDWARE');
+  }catch(e){addLog('hardware FAILED: '+e.message,false,'HARDWARE');}
 
-  addLog('If 20 ✅, ALL TOOLS DONE! Next: Export + PWA + Final UI', true, 'FINAL');
+  addLog('If 22 ✅, Export Ready! Next: FINAL UI + PWA', true, 'FINAL');
 </script>
 </body>
 </html>
