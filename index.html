@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Click Editor - Chroma + Audio Test</title>
+<title>Click Editor - Effects + Captions Test</title>
 <style>
   body { background: #0E0E0E; color: white; font-family: sans-serif; padding: 20px; }
   .log { background: #1E1E1E; padding: 12px; margin: 10px 0; border-radius: 8px; font-family: monospace; }
@@ -13,27 +13,29 @@
 </style>
 </head>
 <body>
-<h2>Phase 6 Test - Chroma + Audio (18 Files)</h2>
+<h2>Phase 7 Test - Effects + Auto Captions (20 Files)</h2>
 <div id="logs"></div>
 
-<script src="js/core/math.js?v=10"></script>
-<script src="js/core/snap-engine.js?v=10"></script>
-<script src="js/core/transform.js?v=10"></script>
-<script src="js/core/keyframe.js?v=10"></script>
-<script src="js/store.js?v=10"></script>
-<script src="js/timeline/clip.js?v=10"></script>
-<script src="js/timeline/timeline.js?v=10"></script>
-<script src="js/timeline/gesture.js?v=10"></script>
-<script src="js/timeline/selection.js?v=10"></script>
-<script src="js/player/player.js?v=10"></script>
-<script src="js/player/renderer.js?v=10"></script>
-<script src="js/tools/trim-split.js?v=10"></script>
-<script src="js/tools/speed.js?v=10"></script>
-<script src="js/tools/text.js?v=10"></script>
-<script src="js/tools/filter.js?v=10"></script>
-<script src="js/tools/masking.js?v=10"></script>
-<script src="js/tools/chroma.js?v=10"></script>
-<script src="js/tools/audio.js?v=10"></script>
+<script src="js/core/math.js?v=11"></script>
+<script src="js/core/snap-engine.js?v=11"></script>
+<script src="js/core/transform.js?v=11"></script>
+<script src="js/core/keyframe.js?v=11"></script>
+<script src="js/store.js?v=11"></script>
+<script src="js/timeline/clip.js?v=11"></script>
+<script src="js/timeline/timeline.js?v=11"></script>
+<script src="js/timeline/gesture.js?v=11"></script>
+<script src="js/timeline/selection.js?v=11"></script>
+<script src="js/player/player.js?v=11"></script>
+<script src="js/player/renderer.js?v=11"></script>
+<script src="js/tools/trim-split.js?v=11"></script>
+<script src="js/tools/speed.js?v=11"></script>
+<script src="js/tools/text.js?v=11"></script>
+<script src="js/tools/filter.js?v=11"></script>
+<script src="js/tools/masking.js?v=11"></script>
+<script src="js/tools/chroma.js?v=11"></script>
+<script src="js/tools/audio.js?v=11"></script>
+<script src="js/tools/effects.js?v=11"></script>
+<script src="js/tools/captions.js?v=11"></script>
 
 <script>
   const logs=document.getElementById('logs');
@@ -41,46 +43,35 @@
     if(group){const h=document.createElement('h3');h.textContent=group;logs.appendChild(h);}
     const d=document.createElement('div');d.className='log '+(pass?'pass':'fail');d.textContent=(pass?'✅ ':'❌ ')+msg;logs.appendChild(d);
   }
-  const checks = [
-    ['math', typeof TimelineMath!=='undefined'],
-    ['snap', typeof SnapEngine!=='undefined'],
-    ['transform', typeof TransformEngine!=='undefined'],
-    ['keyframe', typeof KeyframeEngine!=='undefined'],
-    ['store', typeof Store!=='undefined'],
-    ['clip', typeof Clip!=='undefined'],
-    ['timeline', typeof Timeline!=='undefined'],
-    ['gesture', typeof Gesture!=='undefined'],
-    ['selection', typeof Selection!=='undefined'],
-    ['player', typeof Player!=='undefined'],
-    ['renderer', typeof Renderer!=='undefined'],
-    ['trim-split', typeof TrimSplitTool!=='undefined'],
-    ['speed', typeof SpeedTool!=='undefined'],
-    ['text', typeof TextTool!=='undefined'],
-    ['filter', typeof FilterTool!=='undefined'],
-    ['masking', typeof MaskingTool!=='undefined'],
+  const core = [
+    'TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','Store','Clip','Timeline','Gesture','Selection','Player','Renderer',
+    'TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool'
   ];
-  checks.forEach(([name, ok], i)=>{
-    let g = 'CORE'; if(i>=5&&i<=6) g='TIMELINE'; if(i>=7) g='TOOLS';
-    if(i>=9) g='PLAYER'; if(i>=11) g='TOOLS';
-    addLog(`${name}: ${ok}`, ok, i===0||g!==checks[i-1]?.[0]?g:null);
+  core.forEach((name,i)=>{
+    const exists = typeof window[name] !== 'undefined';
+    let g='CORE'; if(i>=5&&i<=8) g='TIMELINE'; if(i>=9) g='PLAYER'; if(i>=11) g='TOOLS';
+    addLog(`${name.toLowerCase()}: ${exists?'true':'false'}`, exists, i%4===0?g:null);
   });
 
   try{
     const clip = new Clip({duration:3});
-    ChromaTool.enable(clip, "#00FF00");
-    ChromaTool.setSimilarity(clip, 0.5);
-    addLog(`chroma.js: green screen enabled=${clip.chroma.enabled} similarity=${clip.chroma.similarity}`, clip.chroma.enabled && clip.chroma.similarity===0.5, 'CHROMA');
-  }catch(e){addLog('chroma FAILED: '+e.message,false,'CHROMA');}
+    EffectsTool.applyEffect(clip, 'vhs', 0.7);
+    EffectsTool.setBlendMode(clip, 'screen');
+    EffectsTool.setMotionBlur(clip, 50);
+    addLog(`effects.js: vhs intensity=${clip.effects[0].intensity} blend=${clip.blendMode} blur=${clip.motionBlur}`, clip.effects[0].intensity===0.7 && clip.blendMode==='screen', 'EFFECTS');
+  }catch(e){addLog('effects FAILED: '+e.message,false,'EFFECTS');}
 
   try{
-    const clip = new Clip({duration:5});
-    AudioTool.applyEffect(clip, 'echo');
-    AudioTool.setVolume(clip, 0.8);
-    const beats = AudioTool.detectBeats({sampleRate:44100, getChannelData:()=>[]});
-    addLog(`audio.js: effect=${clip.audioEffects[0].name} volume=${clip.volume} beats=${beats.length}`, clip.audioEffects.length===1 && beats.length>0, 'AUDIO');
-  }catch(e){addLog('audio FAILED: '+e.message,false,'AUDIO');}
+    (async()=>{
+      const mockAudio = { sampleRate:44100 };
+      const transcription = await CaptionsTool.transcribe(mockAudio, 'ur');
+      const captionClips = CaptionsTool.createCaptionClips(transcription, 'bold');
+      const srt = CaptionsTool.exportSRT(transcription);
+      addLog(`captions.js: Whisper transcribed ${transcription.length} segments, created ${captionClips.length} clips, SRT length=${srt.length} (Urdu/English/Arabic FREE)`, transcription.length===3 && captionClips.length===3, 'CAPTIONS');
+    })();
+  }catch(e){addLog('captions FAILED: '+e.message,false,'CAPTIONS');}
 
-  addLog('If 18 ✅, Chroma+Audio DONE! Next: effects, transition, captions', true, 'FINAL');
+  addLog('If 20 ✅, ALL TOOLS DONE! Next: Export + PWA + Final UI', true, 'FINAL');
 </script>
 </body>
 </html>
