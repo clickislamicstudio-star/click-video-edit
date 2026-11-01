@@ -1,6 +1,7 @@
 /**
  * js/player/renderer.js - REAL Renderer - Shows real video frame
- * Draws video element onto canvas + handles Playhead sync
+ * Draws real video element - No dummy
+ * Click to play, shows first frame after import
  */
 const Renderer = {
   videoElement: null,
@@ -13,7 +14,12 @@ const Renderer = {
       return;
     }
 
-    // When video loads, show it
+    // When video metadata loads
+    this.videoElement.addEventListener('loadedmetadata', ()=>{
+      console.log('Renderer: Metadata loaded', this.videoElement.videoWidth, 'x', this.videoElement.videoHeight);
+    });
+
+    // When video data loads - show first frame
     this.videoElement.addEventListener('loadeddata', ()=>{
       this.isReady = true;
       this.videoElement.style.display = 'block';
@@ -22,37 +28,53 @@ const Renderer = {
       if(importBtn) importBtn.style.display = 'none';
       
       const status = document.getElementById('status');
-      if(status) status.textContent = `Ready: ${this.videoElement.videoWidth}x${this.videoElement.videoHeight} - Tap to Play`;
+      if(status) {
+        const w = this.videoElement.videoWidth || 0;
+        const h = this.videoElement.videoHeight || 0;
+        const dur = this.videoElement.duration ? this.videoElement.duration.toFixed(1) : '0';
+        status.textContent = `Ready: ${w}x${h} - ${dur}s - Tap to Play`;
+        status.style.color = '#0F0';
+      }
       
       console.log('Renderer: Video ready', this.videoElement.videoWidth, 'x', this.videoElement.videoHeight);
       
-      // Force render first frame
-      this.videoElement.currentTime = 0.1;
+      // Force show first frame at 0.1s
+      try {
+        this.videoElement.currentTime = 0.1;
+      } catch(e){}
     });
 
     this.videoElement.addEventListener('error', (e)=>{
       console.error('Video load error', e);
       const status = document.getElementById('status');
-      if(status) status.textContent = 'Error loading video - Try MP4';
+      if(status) {
+        status.textContent = 'Error loading video - Try MP4 file';
+        status.style.color = '#F00';
+      }
     });
 
-    console.log('Renderer Ready - Real Video');
+    this.videoElement.addEventListener('canplay', ()=>{
+      this.videoElement.style.display = 'block';
+    });
+
+    console.log('Renderer Ready - Real Video v2');
   },
 
-  // Draw current video frame (for export thumbnail)
   getCurrentFrame() {
     if(!this.videoElement || !this.isReady) return null;
     
-    const canvas = document.createElement('canvas');
-    canvas.width = this.videoElement.videoWidth;
-    canvas.height = this.videoElement.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(this.videoElement, 0, 0);
-    
-    return canvas.toDataURL('image/png');
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = this.videoElement.videoWidth;
+      canvas.height = this.videoElement.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(this.videoElement, 0, 0);
+      return canvas.toDataURL('image/png');
+    } catch(e){
+      return null;
+    }
   },
 
-  // Show video
   show() {
     if(this.videoElement) {
       this.videoElement.style.display = 'block';
