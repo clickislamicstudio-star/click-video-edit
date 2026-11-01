@@ -1,20 +1,22 @@
 /**
  * js/timeline/zoom-engine.js - Professional Pinch & Wheel Zoom
- * Formula: pixelsPerSecond 20-200, Pinch distance ratio
- * 【entity-CapCut¦canonical_name=CapCut】 Style: 2 fingers pinch -> zoom
+ * CapCut Style: 2 fingers pinch -> zoom 20-200px/s
  */
 const ZoomEngine = {
-  minPPS: 20,   // Fully zoomed out - 20px = 1s (long timeline)
-  maxPPS: 200,  // Fully zoomed in - 200px = 1s (frame level)
+  minPPS: 20,
+  maxPPS: 200,
   defaultPPS: 80,
   lastPinchDistance: 0,
   isPinching: false,
 
   init() {
-    if(!window.TimelineUI) return;
+    if(!window.TimelineUI) {
+      setTimeout(()=>this.init(), 500);
+      return;
+    }
     this.bindPinch();
     this.bindWheel();
-    console.log('ZoomEngine Ready - Pinch & Wheel');
+    console.log('ZoomEngine Ready - Pinch & Wheel Zoom 20-200');
   },
 
   bindPinch() {
@@ -35,23 +37,19 @@ const ZoomEngine = {
         const newDist = this.getDistance(e.touches[0], e.touches[1]);
         const ratio = newDist / this.lastPinchDistance;
         
-        // Calculate new PPS
         let newPPS = window.TimelineUI.pixelsPerSecond * ratio;
         newPPS = Math.max(this.minPPS, Math.min(this.maxPPS, newPPS));
         
         window.TimelineUI.setZoom(newPPS);
         this.lastPinchDistance = newDist;
         
-        // Vibrate on zoom tick
-        if(Math.abs(ratio - 1) > 0.05 && navigator.vibrate) navigator.vibrate(10);
+        if(Math.abs(ratio - 1) > 0.04 && navigator.vibrate) navigator.vibrate(10);
       }
     }, {passive: false});
 
     canvas.addEventListener('touchend', () => {
-      if(this.isPinching) {
-        this.isPinching = false;
-        this.lastPinchDistance = 0;
-      }
+      this.isPinching = false;
+      this.lastPinchDistance = 0;
     });
   },
 
@@ -61,7 +59,7 @@ const ZoomEngine = {
 
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -10 : 10; // Wheel down = zoom out
+      const delta = e.deltaY > 0 ? -12 : 12;
       let newPPS = window.TimelineUI.pixelsPerSecond + delta;
       newPPS = Math.max(this.minPPS, Math.min(this.maxPPS, newPPS));
       window.TimelineUI.setZoom(newPPS);
@@ -74,7 +72,6 @@ const ZoomEngine = {
     return Math.sqrt(dx*dx + dy*dy);
   },
 
-  // Zoom buttons for toolbar
   zoomIn() {
     if(window.TimelineUI) {
       let pps = window.TimelineUI.pixelsPerSecond + 20;
@@ -94,7 +91,6 @@ const ZoomEngine = {
   getZoomLevel() {
     if(!window.TimelineUI) return 0;
     const pps = window.TimelineUI.pixelsPerSecond;
-    // Return 0-100% zoom level
     return ((pps - this.minPPS) / (this.maxPPS - this.minPPS)) * 100;
   }
 };
