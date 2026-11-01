@@ -1,6 +1,6 @@
 /**
- * js/tools/media-import.js - REAL Video Import - No Mock
- * Uses File Picker + URL.createObjectURL + Video Duration
+ * js/tools/media-import.js - REAL Video Import - No Dummy
+ * Uses File Picker + URL.createObjectURL + Real Duration + Clear Dummy
  */
 const MediaImportTool = {
   lastFile: null,
@@ -16,6 +16,11 @@ const MediaImportTool = {
       input.onchange = async (e) => {
         const files = Array.from(e.target.files);
         const newClips = [];
+
+        // Clear old dummy clips first - REAL EDITOR
+        if(window.TimelineUI) {
+          TimelineUI.clearAll();
+        }
 
         for(let i=0; i<files.length; i++) {
           const file = files[i];
@@ -33,12 +38,21 @@ const MediaImportTool = {
           newClips.forEach(c=>TimelineUI.addClip(c));
         }
 
-        // Load first video into Player
+        // Load first video into Player - REAL
         if(newClips.length>0 && window.Player) {
           const firstVideo = newClips.find(c=>c.type==='video');
           if(firstVideo) {
             Player.loadClip(firstVideo);
+            if(window.Renderer) {
+              Renderer.show();
+            }
           }
+        }
+
+        const status = document.getElementById('status');
+        if(status && newClips.length>0) {
+          status.textContent = `Imported ${newClips.length} files - Tap video to play`;
+          status.style.color = '#0F0';
         }
 
         resolve(newClips);
@@ -62,9 +76,8 @@ const MediaImportTool = {
         
         video.onloadedmetadata = async () => {
           const duration = video.duration || 5;
-          console.log('Video duration:', duration);
+          console.log('Real Video duration:', duration);
 
-          // Generate waveform if audio present
           let waveform = null;
           if(window.WaveformRenderer) {
             try {
@@ -92,7 +105,7 @@ const MediaImportTool = {
         };
 
         video.onerror = () => {
-          // Fallback if metadata fails
+          console.warn('Video metadata failed, using 5s default');
           const clip = new Clip({
             id: 'clip_'+Date.now()+'_'+index,
             track: 'V1',
@@ -107,14 +120,15 @@ const MediaImportTool = {
         };
 
       } else if(type === 'audio') {
-        // Audio file
         const audio = document.createElement('audio');
         audio.src = url;
         audio.onloadedmetadata = async () => {
           const duration = audio.duration || 5;
           let waveform = null;
           if(window.WaveformRenderer) {
-            waveform = await WaveformRenderer.generateWaveform(file, 80);
+            try {
+              waveform = await WaveformRenderer.generateWaveform(file, 80);
+            } catch(e){}
           }
 
           const clip = new Clip({
@@ -130,12 +144,27 @@ const MediaImportTool = {
           });
           resolve(clip);
         };
+
+        audio.onerror = () => {
+          const clip = new Clip({
+            id: 'clip_'+Date.now()+'_'+index,
+            track: 'A1',
+            startTime: this.getNextA1Time(),
+            duration: 5,
+            type: 'audio',
+            name: file.name,
+            file: file,
+            url: url
+          });
+          resolve(clip);
+        };
+
       } else {
-        // Image - 3 seconds default
+        // Image - 3 seconds
         const clip = new Clip({
           id: 'clip_'+Date.now()+'_'+index,
           track: 'V2',
-          startTime: window.TimelineUI ? TimelineUI.clips.length : 0,
+          startTime: 0,
           duration: 3,
           type: 'image',
           name: file.name,
