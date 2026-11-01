@@ -1,97 +1,88 @@
 /**
- * js/timeline/zoom-engine.js - Professional Pinch & Wheel Zoom
- * CapCut Style: 2 fingers pinch -> zoom 20-200px/s
+ * js/timeline/zoom-engine.js - v2.0 FINAL - 5px/s to 300px/s
+ * Professional: 5px/s = Full video in screen, 300px/s = Frame by frame
  */
 const ZoomEngine = {
-  minPPS: 20,
-  maxPPS: 200,
-  defaultPPS: 80,
-  lastPinchDistance: 0,
-  isPinching: false,
+  minPps: 5,
+  maxPps: 300,
+  defaultPps: 80,
+  currentPps: 80,
 
   init() {
-    if(!window.TimelineUI) {
-      setTimeout(()=>this.init(), 500);
-      return;
+    this.currentPps = 80;
+    if(window.TimelineUI) {
+      TimelineUI.pixelsPerSecond = this.currentPps;
     }
-    this.bindPinch();
-    this.bindWheel();
-    console.log('ZoomEngine Ready - Pinch & Wheel Zoom 20-200');
+    console.log('ZoomEngine v2.0 FINAL - 5 to 300px/s');
   },
 
-  bindPinch() {
-    const canvas = window.TimelineUI.canvas;
-    if(!canvas) return;
-
-    canvas.addEventListener('touchstart', (e) => {
-      if(e.touches.length === 2) {
-        this.isPinching = true;
-        this.lastPinchDistance = this.getDistance(e.touches[0], e.touches[1]);
-        e.preventDefault();
-      }
-    }, {passive: false});
-
-    canvas.addEventListener('touchmove', (e) => {
-      if(e.touches.length === 2 && this.isPinching) {
-        e.preventDefault();
-        const newDist = this.getDistance(e.touches[0], e.touches[1]);
-        const ratio = newDist / this.lastPinchDistance;
-        
-        let newPPS = window.TimelineUI.pixelsPerSecond * ratio;
-        newPPS = Math.max(this.minPPS, Math.min(this.maxPPS, newPPS));
-        
-        window.TimelineUI.setZoom(newPPS);
-        this.lastPinchDistance = newDist;
-        
-        if(Math.abs(ratio - 1) > 0.04 && navigator.vibrate) navigator.vibrate(10);
-      }
-    }, {passive: false});
-
-    canvas.addEventListener('touchend', () => {
-      this.isPinching = false;
-      this.lastPinchDistance = 0;
-    });
+  // Zoom by scale factor (for pinch)
+  zoomBy(scale) {
+    let newPps = this.currentPps * scale;
+    this.setZoom(newPps);
   },
 
-  bindWheel() {
-    const canvas = window.TimelineUI?.canvas;
-    if(!canvas) return;
-
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -12 : 12;
-      let newPPS = window.TimelineUI.pixelsPerSecond + delta;
-      newPPS = Math.max(this.minPPS, Math.min(this.maxPPS, newPPS));
-      window.TimelineUI.setZoom(newPPS);
-    }, {passive: false});
-  },
-
-  getDistance(t1, t2) {
-    const dx = t1.clientX - t2.clientX;
-    const dy = t1.clientY - t2.clientY;
-    return Math.sqrt(dx*dx + dy*dy);
+  setZoom(pps) {
+    pps = Math.max(this.minPps, Math.min(this.maxPps, pps));
+    this.currentPps = pps;
+    
+    if(window.TimelineUI) {
+      TimelineUI.setZoom(pps);
+    }
+    
+    this.updateUI();
   },
 
   zoomIn() {
-    if(window.TimelineUI) {
-      let pps = window.TimelineUI.pixelsPerSecond + 20;
-      pps = Math.min(this.maxPPS, pps);
-      window.TimelineUI.setZoom(pps);
-    }
+    this.setZoom(this.currentPps * 1.3);
   },
 
   zoomOut() {
+    this.setZoom(this.currentPps * 0.7);
+  },
+
+  zoomToFit(duration) {
+    if(!duration || !window.TimelineUI || !TimelineUI.canvas) return;
+    
+    const width = TimelineUI.canvas.width / 2;
+    // Fit whole video in 70% of screen like your 01:02 screenshot
+    const targetPps = (width * 0.7) / duration;
+    this.setZoom(targetPps);
+    
+    // Center the video
     if(window.TimelineUI) {
-      let pps = window.TimelineUI.pixelsPerSecond - 20;
-      pps = Math.max(this.minPPS, pps);
-      window.TimelineUI.setZoom(pps);
+      const centerOffset = (width/2) / targetPps;
+      TimelineUI.scrollOffset = -centerOffset + 0.15;
+      TimelineUI.render();
     }
   },
 
   getZoomLevel() {
-    if(!window.TimelineUI) return 0;
-    const pps = window.TimelineUI.pixelsPerSecond;
-    return ((pps - this.minPPS) / (this.maxPPS - this.minPPS)) * 100;
+    return (this.currentPps / this.defaultPps) * 100;
+  },
+
+  getPps() {
+    return this.currentPps;
+  },
+
+  updateUI() {
+    const zoomText = document.getElementById('zoomLevel');
+    if(zoomText) {
+      zoomText.textContent = Math.round(this.getZoomLevel()) + '%';
+    }
+  },
+
+  // For buttons
+  handlePinch(startDist, currentDist) {
+    const scale = currentDist / startDist;
+    this.zoomBy(scale);
   }
 };
 window.ZoomEngine = ZoomEngine;
+
+// Auto init
+if(document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', ()=>ZoomEngine.init());
+} else {
+  setTimeout(()=>ZoomEngine.init(), 200);
+}
