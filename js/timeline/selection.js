@@ -1,30 +1,58 @@
 /**
- * js/timeline/selection.js - Single + Multi Selection
+ * js/timeline/selection.js - v2.0 - Professional Selection with Contextual Toolbar
+ * When clip selected, show contextual toolbar above main toolbar
  */
 const Selection = {
-  selectedIds: [],
+  selectedClip: null,
+  selectedTrack: null,
 
-  select(id) {
-    this.selectedIds = [id];
-    console.log('Selected:', id);
-    return this.selectedIds;
+  init() {
+    console.log('Selection v2.0 - Contextual Toolbar Ready');
   },
 
-  multiSelect(id) {
-    if(this.selectedIds.includes(id)) {
-      this.selectedIds = this.selectedIds.filter(i => i !== id);
-    } else {
-      this.selectedIds.push(id);
+  selectClip(clip) {
+    this.selectedClip = clip;
+    this.selectedTrack = clip.track;
+    
+    // Update TimelineUI selection
+    if(window.TimelineUI) {
+      TimelineUI.selectedClip = clip;
+      TimelineUI.render();
     }
-    return this.selectedIds;
+
+    // Show contextual toolbar based on clip type
+    if(window.Toolbar) {
+      Toolbar.showForClip(clip);
+    }
+
+    // Load clip into player
+    if(window.Player && clip.type === 'video') {
+      Player.loadClip(clip);
+    }
+
+    console.log('Selected:', clip.name, 'Track:', clip.track);
   },
 
-  clear() {
-    this.selectedIds = [];
+  deselect() {
+    this.selectedClip = null;
+    this.selectedTrack = null;
+    
+    if(window.TimelineUI) {
+      TimelineUI.selectedClip = null;
+      TimelineUI.render();
+    }
+
+    if(window.Toolbar) {
+      Toolbar.hide();
+    }
   },
 
-  isSelected(id) {
-    return this.selectedIds.includes(id);
+  getSelected() {
+    return this.selectedClip;
+  },
+
+  isSelected(clipId) {
+    return this.selectedClip && this.selectedClip.id === clipId;
   }
 };
 window.Selection = Selection;
