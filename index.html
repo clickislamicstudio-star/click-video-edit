@@ -1,94 +1,285 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en" dir="ltr">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Click v1.7 - Real Import + Real Player - 36 Files</title>
-<meta name="theme-color" content="#FF3B30">
+<title>Click Video Editor v7.0 - Header + Canvas + Toolbar FINAL</title>
+<link rel="manifest" href="manifest.json?v=70">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{background:#0E0E0E;color:white;font-family:sans-serif;height:100vh;display:flex;flex-direction:column}
-header{background:#1A1A1A;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2A2A2A}header h1{color:#FF3B30;font-size:14px}.btn{background:#2A2A2A;color:white;border:none;padding:8px 14px;border-radius:20px;font-size:12px}.btn-primary{background:#FF3B30}
-#playerArea{height:45vh;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;padding:5px}#playerWrap{width:90%;max-width:340px;aspect-ratio:9/16;background:#111;border-radius:8px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}#realVideo{width:100%;height:100%;object-fit:contain;background:#000;display:none}#importBtn{background:#FF3B30;color:white;border:none;padding:14px 28px;border-radius:30px;font-size:14px;cursor:pointer;z-index:5}#importBtn:active{transform:scale(0.95)}#playOverlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:50px;display:none;z-index:4;cursor:pointer;text-shadow:0 2px 10px rgba(0,0,0,0.8)}
-#timelineArea{flex:1;background:#1E1E1E;border-top:2px solid #FF3B30;overflow:hidden;position:relative}#timelineArea canvas{display:block}
-#toolbar{background:#1A1A1A;padding:8px 0;border-top:1px solid #2A2A2A;overflow-x:auto;white-space:nowrap}.tool-btn{background:transparent;border:none;color:white;padding:8px 12px;min-width:60px;font-size:11px}.tool-icon{width:26px;height:26px;background:#2A2A2A;border-radius:7px;display:flex;align-items:center;justify-content:center;margin:0 auto 4px}
-#badge{position:fixed;top:50px;right:10px;background:#4CAF50;color:white;padding:5px 10px;border-radius:20px;font-size:10px;z-index:100;max-width:70vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#info{position:fixed;bottom:70px;left:10px;right:10px;background:rgba(0,0,0,0.9);color:#FF3B30;padding:8px 12px;border-radius:10px;font-size:10px;font-family:monospace;z-index:90;text-align:center}
-#status{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);color:#0F0;padding:4px 8px;border-radius:10px;font-size:9px;z-index:6}
+:root{--bg:#0a0a0a;--panel:#1a1a1a;--panel2:#232323;--border:#2a2a2a;--text:#fff;--muted:#888;--blue:#2B8AFF;--pink:#FF3B7F;--green:#00D084;--yellow:#FFC02E;--purple:#8B5CF6}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:Inter,Roboto,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+/* HEADER - Like Screenshot 4:41 */
+.header{height:52px;background:#111;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:12px}
+.icon-btn{width:36px;height:36px;border-radius:50%;background:#1e1e1e;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;color:#fff;font-size:18px}
+.header-center{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.header-center span{opacity:0.7}
+.header-right{display:flex;align-items:center;gap:8px}
+.export-btn{background:var(--blue);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer}
+/* CANVAS - Like Screenshot */
+.canvas-wrap{flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:200px}
+#realVideo{width:100%;height:100%;object-fit:contain;background:#000;display:none}
+#canvasPlaceholder{width:100%;height:100%;background:linear-gradient(135deg,#111 25%,#1a1a1a 25%,#1a1a1a 50%,#111 50%,#111 75%,#1a1a1a 75%);background-size:20px 20px;display:flex;align-items:center;justify-content:center;color:#555}
+.text-overlay{position:absolute;pointer-events:none;color:#fff;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.8)}
+/* PLAYER CONTROLS - Below Canvas */
+.player-controls{height:42px;background:#151515;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0}
+.pc-left,.pc-right{display:flex;gap:10px}
+.pc-btn{width:34px;height:34px;border-radius:50%;background:#222;display:flex;align-items:center;justify-content:center;border:none;color:#fff;cursor:pointer}
+/* TIMELINE RULER + TRACKS */
+.timeline-area{height:200px;background:#111;display:flex;flex-direction:column;flex-shrink:0;border-bottom:1px solid var(--border)}
+.ruler{height:32px;background:#0f0f0f;display:flex;align-items:center;padding:0 0 0 100px;position:relative;overflow:hidden;border-bottom:1px solid var(--border);font-size:11px;color:#666;flex-shrink:0}
+.ruler-inner{display:flex;gap:40px}
+.tracks{flex:1;display:flex;flex-direction:column;overflow-y:auto}
+.track{height:48px;display:flex;border-bottom:1px solid #1a1a1a;flex-shrink:0}
+.track-label{width:100px;background:#161616;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-right:1px solid var(--border);font-size:11px;color:#aaa;flex-shrink:0}
+.track-content{flex:1;position:relative;background:#111;overflow:hidden}
+.clip{position:absolute;top:4px;bottom:4px;background:var(--blue);border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:11px;white-space:nowrap;overflow:hidden;cursor:pointer;border:2px solid transparent}
+.clip.selected{border-color:#fff;box-shadow:0 0 0 2px var(--blue)}
+.clip.audio{background:#2B7FFF}
+.clip.text{background:var(--green)}
+/* BOTTOM TOOLBARS - 3 LEVEL SYSTEM */
+.toolbar-container{flex-shrink:0;background:#111}
+/* Level 1 - Main Bottom - Always - Like Screenshot: Audio, Graphic, Text, PIP, Effect */
+.main-toolbar{height:64px;background:#1a1a1a;display:flex;align-items:center;justify-content:space-around;padding:0 8px;border-top:1px solid var(--border)}
+.main-tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 14px;border-radius:12px;cursor:pointer;transition:all 0.2s;border:none;background:transparent;color:#888;font-size:11px;font-weight:600}
+.main-tab.active{background:#fff;color:#000}
+.main-tab.active.audio{color:#000;background:#fff}
+.main-tab .ico{width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:18px}
+/* Level 2 - Left Vertical - Sub Tools */
+.left-vertical{position:absolute;left:0;bottom:64px;top:0;width:90px;background:#161616;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:8px 4px;gap:4px;z-index:10;transform:translateX(-100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1)}
+.left-vertical.show{transform:translateX(0)}
+.v-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:10px;cursor:pointer;color:#888;font-size:10px;font-weight:500;background:transparent;border:none}
+.v-item.active,.v-item:hover{background:#222;color:#fff}
+.v-item .ico{font-size:20px}
+/* Level 3 - Contextual - Clip Selected - Slide Right to Left - Like Screenshot 4:20 */
+.contextual-toolbar{position:absolute;left:0;right:0;bottom:64px;background:#1e1e1e;border-top:1px solid #333;display:flex;flex-direction:column;z-index:20;transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);box-shadow:0 -4px 20px rgba(0,0,0,0.5)}
+.contextual-toolbar.show{transform:translateX(0)}
+.ctx-row{display:flex;align-items:center;justify-content:space-around;padding:10px 4px;border-bottom:1px solid #2a2a2a;overflow-x:auto}
+.ctx-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 10px;border:none;background:transparent;color:#ccc;font-size:10px;cursor:pointer;min-width:60px}
+.ctx-btn .ico{font-size:20px;background:#2a2a2a;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.ctx-btn.delete .ico{background:#3a1a1a;color:#ff5555}
+.done-btn{margin:10px;background:var(--blue);color:#fff;border:none;height:48px;border-radius:24px;font-weight:700;font-size:16px;cursor:pointer}
+/* MODALS - Settings, Export, Tutorial */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:flex-end;z-index:100}
+.modal.show{display:flex}
+.modal-sheet{width:100%;max-height:85vh;background:#151515;border-radius:20px 20px 0 0;padding:16px;overflow-y:auto;animation:slideUp 0.3s}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid #222;margin-bottom:12px}
+.aspect-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0}
+.aspect-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:10px;background:#1e1e1e;cursor:pointer;border:2px solid transparent;font-size:11px}
+.aspect-item.active{border-color:var(--blue);background:#1a2a44;color:var(--blue)}
+.res-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0}
+.res-item{padding:10px 4px;border-radius:10px;background:#1e1e1e;text-align:center;cursor:pointer;border:2px solid transparent;font-size:11px}
+.res-item.active{border-color:var(--blue);color:var(--blue)}
+.badge{position:absolute;top:8px;left:8px;background:var(--green);color:#000;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:700;z-index:5}
 </style>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
-<header><h1>Click v1.7 - Real Import - 36 Files</h1><div><button class="btn" id="langBtn">EN</button><button class="btn btn-primary" id="exportBtn">Export</button></div></header>
-<div id="playerArea">
-  <div id="playerWrap">
-    <video id="realVideo" playsinline></video>
-    <button id="importBtn">📁 Import Video</button>
-    <div id="playOverlay">▶️</div>
-    <div id="status">Ready - Import to Start</div>
-  </div>
-  <div id="badge">Checking 36 Files...</div>
+<div class="badge">Click v7.0 - Header+Canvas+Toolbar FINAL - 42 Files</div>
+
+<!-- HEADER - Like Your Screenshot 4:41 -->
+<div class="header">
+<div class="header-left">
+<button class="icon-btn" id="backBtn">‹</button>
+<button class="icon-btn" id="helpBtn">?</button>
 </div>
-<div id="contextualToolbar" style="position:fixed;bottom:70px;left:0;right:0;height:56px;background:#1E1E1E;transform:translateX(100%);transition:transform 0.3s;z-index:100;display:flex;align-items:center;gap:8px;padding:0 12px;overflow-x:auto;"></div>
-<div id="mainToolbar" style="position:fixed;bottom:0;left:0;right:0;height:70px;background:#121212;display:flex;align-items:center;justify-content:space-around;padding:0 8px;z-index:99;border-top:1px solid #222;">
-  <button onclick="MediaImportTool.importToTimeline()" style="background:#2A2A2A;border:none;color:#FFF;padding:10px 16px;border-radius:8px;">📁 Media</button>
-  <button onclick="TextTool.addTextClip()" style="background:#2A2A2A;border:none;color:#FFF;padding:10px 16px;border-radius:8px;">📝 Text</button>
-  <button onclick="ZoomEngine.zoomOut()" style="background:#2A2A2A;border:none;color:#FFF;padding:10px 12px;border-radius:8px;">🔍-</button>
-  <button onclick="ZoomEngine.zoomIn()" style="background:#2A2A2A;border:none;color:#FFF;padding:10px 12px;border-radius:8px;">🔍+</button>
-  <button id="exportBtn" style="background:#FF3B30;border:none;color:#FFF;padding:10px 16px;border-radius:8px;">⬆️ Export</button>
+<div class="header-center" id="projectTitle">Surah At-Tin <span>(16:9)</span> <button class="icon-btn" id="settingsBtn" style="width:28px;height:28px">⚙</button></div>
+<div class="header-right">
+<button class="export-btn" id="exportBtn">↗ Export</button>
 </div>
-<div id="textOverlay" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:32px;font-weight:bold;text-align:center;text-shadow:2px 2px 4px rgba(0,0,0,0.8);background:rgba(0,0,0,0.3);padding:8px 16px;border-radius:8px;pointer-events:none;display:none;z-index:20;max-width:80%;"></div>
-<div id="timelineArea"></div>
-<div id="info">Import Real Video -> Player Plays Real Video -> Timeline Shows Real Duration</div>
-<div id="toolbar"><div>
-<button class="tool-btn" onclick="ZoomEngine.zoomOut()"><div class="tool-icon">➖</div>ZoomOut</button><button class="tool-btn" onclick="ZoomEngine.zoomIn()"><div class="tool-icon">➕</div>ZoomIn</button><button class="tool-btn" id="btnTrim"><div class="tool-icon">✂️</div>Trim</button><button class="tool-btn"><div class="tool-icon">⚡</div>Speed</button><button class="tool-btn"><div class="tool-icon">T</div>Text</button><button class="tool-btn"><div class="tool-icon">🎨</div>Filter</button><button class="tool-btn"><div class="tool-icon">⭕</div>Mask</button><button class="tool-btn"><div class="tool-icon">🎵</div>Audio</button>
-</div></div>
+</div>
 
-<script src="js/core/math.js?v=20"></script><script src="js/core/snap-engine.js?v=20"></script><script src="js/core/transform.js?v=20"></script><script src="js/core/keyframe.js?v=20"></script><script src="js/core/i18n.js?v=20"></script><script src="js/core/waveform.js?v=20"></script><script src="js/core/waveform-renderer.js?v=20"></script><script src="js/store.js?v=20"></script><script src="js/hardware.js?v=20"></script><script src="js/timeline/clip.js?v=20"></script><script src="js/timeline/timeline.js?v=20"></script><script src="js/timeline/gesture.js?v=20"></script><script src="js/timeline/selection.js?v=20"></script><script src="js/timeline/timeline-ui.js?v=20"></script><script src="js/timeline/zoom-engine.js?v=20"></script><script src="js/timeline/markers.js?v=20"></script><script src="js/player/player.js?v=20"></script><script src="js/player/renderer.js?v=20"></script><script src="js/tools/trim-split.js?v=20"></script><script src="js/tools/speed.js?v=20"></script><script src="js/tools/text.js?v=20"></script><script src="js/tools/filter.js?v=20"></script><script src="js/tools/masking.js?v=20"></script><script src="js/tools/chroma.js?v=20"></script><script src="js/tools/audio.js?v=20"></script><script src="js/tools/effects.js?v=20"></script><script src="js/tools/captions.js?v=20"></script><script src="js/tools/whisper-engine.js?v=20"></script><script src="js/tools/media-import.js?v=20"></script><script src="js/export/export.js?v=20"></script><script src="js/export/ffmpeg-engine.js?v=20"></script><script src="js/export/export-queue.js?v=20"></script><script src="js/app.js?v=20"></script>
+<!-- CANVAS -->
+<div class="canvas-wrap" id="playerWrap">
+<div id="canvasPlaceholder">Click Import to Add Video</div>
+<video id="realVideo" playsinline></video>
+<div class="text-overlay" id="textOverlay"></div>
+</div>
 
-<script>
-// Real Import + Real Player wiring
-setTimeout(()=>{
-  if(window.TimelineUI) TimelineUI.init('timelineArea');
-  if(window.ZoomEngine) ZoomEngine.init();
-  if(window.Player) Player.init();
-}, 600);
+<!-- PLAYER CONTROLS -->
+<div class="player-controls">
+<div class="pc-left">
+<button class="pc-btn" id="playBtn">▶</button>
+<button class="pc-btn" id="fitBtn">⛶</button>
+</div>
+<div class="pc-right">
+<button class="pc-btn">↩</button>
+<button class="pc-btn">↪</button>
+</div>
+</div>
 
-document.getElementById('importBtn')?.addEventListener('click', async ()=>{
-  const status = document.getElementById('status');
-  if(status) status.textContent = 'Opening Gallery...';
-  
-  if(window.MediaImportTool) {
-    const clips = await MediaImportTool.importToTimeline();
-    if(clips && clips.length>0) {
-      if(status) status.textContent = `Imported ${clips.length} files - Playing...`;
-      document.getElementById('importBtn').style.display = 'none';
-      document.getElementById('realVideo').style.display = 'block';
-    } else {
-      if(status) status.textContent = 'No file selected';
-    }
-  }
-});
+<!-- TIMELINE -->
+<div class="timeline-area">
+<div class="ruler" id="ruler"><div class="ruler-inner" id="rulerInner">0 • • 00:15 • • 00:30 • • 01:00</div></div>
+<div class="tracks" id="tracks">
+<div class="track"><div class="track-label"><span>+</span><span>Media</span></div><div class="track-content" id="trackV1"></div></div>
+<div class="track"><div class="track-label"><span>♫</span><span>BGM</span></div><div class="track-content" id="trackA1"></div></div>
+<div class="track"><div class="track-label"><span>∿</span><span>Sound Effect</span></div><div class="track-content"></div></div>
+<div class="track"><div class="track-label"><span>🎙</span><span>Voiceover</span></div><div class="track-content"></div></div>
+</div>
+</div>
 
-document.getElementById('realVideo')?.addEventListener('click', ()=>{
-  if(window.Player) Player.togglePlay();
-});
+<!-- LEFT VERTICAL - Level 2 -->
+<div class="left-vertical" id="leftVertical">
+<!-- Dynamic -->
+</div>
 
-document.getElementById('playOverlay')?.addEventListener('click', ()=>{
-  if(window.Player) Player.togglePlay();
-});
+<!-- CONTEXTUAL TOOLBAR - Level 3 - Slide Right to Left -->
+<div class="contextual-toolbar" id="contextualToolbar">
+<div class="ctx-row" id="ctxRow1">
+<!-- Trim Row -->
+</div>
+<div class="ctx-row" id="ctxRow2">
+<!-- Tools Row -->
+</div>
+<button class="done-btn" id="doneBtn">Done</button>
+</div>
 
-setTimeout(()=>{
-  const all=['TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','I18n','WaveformEngine','WaveformRenderer','Store','HardwareDetector','Clip','Timeline','Gesture','Selection','TimelineUI','ZoomEngine','MarkersEngine','Player','Renderer','TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool','WhisperEngine','MediaImportTool','ExportEngine','FFmpegEngine','ExportQueue','App'];
-  const missing=all.filter(n=>typeof window[n]==='undefined');
-  const badge=document.getElementById('badge');
-  if(missing.length===0){
-    badge.textContent='✅ 36 Files - Real Import Ready!';
-    badge.style.background='#4CAF50';
-    console.log('REAL IMPORT READY - No dummy clips');
-  } else {
-    badge.textContent='❌ Missing: '+missing.join(',');
-    badge.style.background='#FF3B30';
-  }
-},1500);
+<!-- MAIN TOOLBAR - Level 1 - Always Bottom -->
+<div class="toolbar-container">
+<div class="main-toolbar" id="mainToolbar">
+<button class="main-tab audio active" data-tab="audio"><span class="ico">♪</span><span>Audio</span></button>
+<button class="main-tab" data-tab="graphic"><span class="ico">◫</span><span>Graphic</span></button>
+<button class="main-tab" data-tab="text"><span class="ico">T</span><span>Text</span></button>
+<button class="main-tab" data-tab="pip"><span class="ico">⧉</span><span>PIP</span></button>
+<button class="main-tab" data-tab="effect"><span class="ico">✦</span><span>Effect</span></button>
+</div>
+</div>
+
+<!-- SETTINGS MODAL - Like Screenshot 4:43 -->
+<div class="modal" id="settingsModal">
+<div class="modal-sheet">
+<div class="modal-header"><h3>Setting</h3><button class="icon-btn" onclick="document.getElementById('settingsModal').classList.remove('show')">✕</button></div>
+<p style="color:#888;font-size:13px;margin-bottom:8px">• Project tags and Titles</p>
+<div style="display:flex;gap:8px;margin-bottom:20px"><input id="projectNameInput" value="Surah At-Tin" style="flex:1;background:#222;border:none;color:#fff;padding:12px;border-radius:10px"></div>
+<p style="color:#888;font-size:13px;margin-bottom:8px">• Aspect Ratio</p>
+<div class="aspect-grid" id="aspectGrid">
+<div class="aspect-item" data-ratio="4:5"><span>▭</span><span>4:5</span></div>
+<div class="aspect-item" data-ratio="1:1"><span>□</span><span>1:1</span></div>
+<div class="aspect-item active" data-ratio="16:9"><span>▬</span><span>16:9</span></div>
+<div class="aspect-item" data-ratio="9:16"><span>▯</span><span>9:16</span></div>
+<div class="aspect-item" data-ratio="1.85:1"><span>▭</span><span>1.85:1</span></div>
+<div class="aspect-item" data-ratio="2:1"><span>▭</span><span>2:1</span></div>
+</div>
+<p style="color:#888;font-size:13px;margin:16px 0 8px">• Media Default Values</p>
+<div style="background:#1a1a1a;padding:12px;border-radius:12px">
+<p style="font-size:12px;color:#888;margin-bottom:12px">Content Mode</p>
+<div style="display:flex;justify-content:space-around"><div style="text-align:center"><div style="width:40px;height:40px;background:#222;border-radius:8px;display:flex;align-items:center;justify-content:center">⊟</div><div style="font-size:11px;margin-top:4px">Fit</div></div><div style="text-align:center;color:var(--blue)"><div style="width:40px;height:40px;background:#1a2a44;border-radius:8px;display:flex;align-items:center;justify-content:center">⛶</div><div style="font-size:11px;margin-top:4px">Fill</div></div><div style="text-align:center"><div style="width:40px;height:40px;background:#222;border-radius:8px;display:flex;align-items:center;justify-content:center">⊡</div><div style="font-size:11px;margin-top:4px">Center</div></div></div>
+<p style="font-size:12px;color:#888;margin:16px 0 8px">Photo length</p>
+<div style="display:flex;justify-content:space-around;font-size:11px"><div style="text-align:center">⌛<br>0.5s</div><div style="text-align:center">⌛<br>1s</div><div style="text-align:center">⌛<br>2s</div><div style="text-align:center;color:var(--blue)">⌛<br>4s</div><div style="text-align:center">⌛<br>10s</div></div>
+</div>
+</div>
+</div>
+
+<!-- EXPORT MODAL - Like Screenshot 4:44 -->
+<div class="modal" id="exportModal">
+<div class="modal-sheet">
+<div class="modal-header"><h3>Export</h3><button class="icon-btn" onclick="document.getElementById('exportModal').classList.remove('show')">‹</button></div>
+<div style="display:flex;gap:16px;border-bottom:1px solid #222;padding-bottom:12px;margin-bottom:12px"><span style="color:var(--blue);border-bottom:2px solid var(--blue);padding-bottom:8px">Video</span><span style="color:#666">GIF</span><span style="color:#666">Project</span><span style="color:#666">Caption</span><span style="color:#666">Audio</span></div>
+<div style="margin-bottom:16px"><label style="font-size:12px;color:#888">File name</label><input value="Surah At-Tin" style="width:100%;background:#222;border:none;color:#fff;padding:12px;border-radius:10px;margin-top:6px"></div>
+<div style="margin-bottom:16px;display:flex;justify-content:space-between"><span style="font-size:13px">Export a range</span><span style="color:var(--blue)">All ></span></div>
+<div style="margin-bottom:16px;display:flex;justify-content:space-between"><span style="font-size:13px">Select the save location</span><span><span style="color:var(--blue)">Album</span> <span style="color:#666">| File</span></span></div>
+<div style="margin-bottom:16px;display:flex;justify-content:space-between"><span style="font-size:13px">Format</span><span style="color:var(--blue)">QHD / 30fps ▼</span></div>
+<div style="background:#1a1a1a;padding:12px;border-radius:12px">
+<div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:13px">• Resolution</span><button style="background:transparent;border:1px solid #444;color:#888;padding:4px 12px;border-radius:6px;font-size:11px">Reset</button></div>
+<div class="res-grid">
+<div class="res-item"><div>Low</div><div style="font-size:10px;color:#666">640x360</div></div>
+<div class="res-item"><div>Medium</div><div style="font-size:10px;color:#666">1280x720</div></div>
+<div class="res-item"><div>High</div><div style="font-size:10px;color:#666">1920x1080</div></div>
+<div class="res-item active"><div>QHD</div><div style="font-size:10px">2560x1440</div></div>
+<div class="res-item"><div>4K UHD</div><div style="font-size:10px;color:#666">3840x2160</div></div>
+</div>
+<div style="margin:16px 0 8px;font-size:13px">• Frame rate</div>
+<div class="res-grid">
+<div class="res-item"><div>18</div></div>
+<div class="res-item"><div>24</div><div style="font-size:10px">Movie</div></div>
+<div class="res-item"><div>25</div><div style="font-size:10px">PAL</div></div>
+<div class="res-item active"><div>30</div><div style="font-size:10px">Default</div></div>
+<div class="res-item"><div>60</div><div style="font-size:10px">βeta</div></div>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0"><span style="font-size:13px">Completion alarm</span><div style="width:44px;height:26px;background:var(--blue);border-radius:13px;position:relative"><div style="width:22px;height:22px;background:#fff;border-radius:50%;position:absolute;right:2px;top:2px"></div></div></div>
+<button style="width:100%;background:var(--blue);color:#fff;border:none;padding:16px;border-radius:24px;font-weight:700;font-size:16px">↗ Export (About 183.46 MB)</button>
+</div>
+</div>
+
+<!-- TUTORIAL MODAL -->
+<div class="modal" id="tutorialModal">
+<div class="modal-sheet">
+<div class="modal-header"><h3>Tutorial</h3><button class="icon-btn" onclick="document.getElementById('tutorialModal').classList.remove('show')">✕</button></div>
+<div style="display:flex;gap:16px;border-bottom:1px solid #222;padding-bottom:12px;margin-bottom:12px"><span style="color:var(--blue);border-bottom:2px solid var(--blue);padding-bottom:8px">function</span><span style="color:#666">VLLO TIPS</span><span style="color:#666">Quick Guide</span></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="background:#222;padding:14px;border-radius:10px;display:flex;justify-content:space-between">#Split and Cut <span>▼</span></div>
+<div style="background:#222;padding:14px;border-radius:10px;display:flex;justify-content:space-between">#Rearrange <span>▼</span></div>
+<div style="background:#222;padding:14px;border-radius:10px;display:flex;justify-content:space-between">#Transition <span>▼</span></div>
+<div style="background:#222;padding:14px;border-radius:10px;display:flex;justify-content:space-between">#Speed <span>▼</span></div>
+<div style="background:#222;padding:14px;border-radius:10px;display:flex;justify-content:space-between">#Clip Animation <span>▼</span></div>
+</div>
+</div>
+</div>
+
+<input type="file" id="importBtn" accept="video/*,image/*,audio/*" style="display:none">
+<script type="module">
+import { ToolbarManager } from './js/tools/toolbar.js?v=70';
+import { Player } from './js/player/player.js?v=70';
+
+const toolbar = new ToolbarManager();
+const player = new Player();
+toolbar.init();
+player.init();
+
+document.getElementById('settingsBtn').onclick=()=>document.getElementById('settingsModal').classList.add('show');
+document.getElementById('exportBtn').onclick=()=>document.getElementById('exportModal').classList.add('show');
+document.getElementById('helpBtn').onclick=()=>document.getElementById('tutorialModal').classList.add('show');
+document.getElementById('backBtn').onclick=()=>alert('Back to Home - Projects List');
+
+document.getElementById('aspectGrid').onclick=(e)=>{
+const item=e.target.closest('.aspect-item'); if(!item) return;
+document.querySelectorAll('.aspect-item').forEach(i=>i.classList.remove('active'));
+item.classList.add('active');
+document.querySelector('#projectTitle span').textContent='('+item.dataset.ratio+')';
+const wrap=document.getElementById('playerWrap');
+if(item.dataset.ratio==='9:16'){wrap.style.aspectRatio='9/16';wrap.style.maxWidth='360px';wrap.style.margin='0 auto'}else if(item.dataset.ratio==='16:9'){wrap.style.aspectRatio='16/9';wrap.style.maxWidth='100%';wrap.style.margin='0'}else{wrap.style.aspectRatio='';wrap.style.maxWidth='100%'}
+};
+
+document.getElementById('importBtn').onchange=(e)=>{
+const file=e.target.files[0]; if(!file) return;
+const url=URL.createObjectURL(file);
+const v=document.getElementById('realVideo');
+v.src=url; v.style.display='block';
+document.getElementById('canvasPlaceholder').style.display='none';
+v.play();
+const track=document.getElementById('trackV1');
+track.innerHTML='<div class="clip selected" style="left:10px;width:200px">video '+Math.round(file.size/1024/1024*10)/10+'MB</div>';
+toolbar.showClipTools({type:'video',name:file.name});
+};
+
+document.getElementById('trackV1').onclick=()=>{document.getElementById('importBtn').click()};
+
+console.log('Click v7.0 - Header+Canvas+Toolbar FINAL Ready');
 </script>
-</body>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
