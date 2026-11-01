@@ -1,14 +1,16 @@
 /**
- * js/timeline/timeline-ui.js - Professional Timeline UI v1.7
- * Real Import - Clear Dummy - Pinch Zoom + 2s Markers + Playhead Center
- * Formula: screenX = (clipTime - scrollOffset) * pixelsPerSecond
+ * js/timeline/timeline-ui.js - v1.8 Professional - CapCut Style
+ * Logic: screenX = (time - scrollOffset) * pps
+ * Start: scrollOffset = -screenWidth/2/pps (so 0s is at center)
+ * Play: scrollOffset = currentTime - screenWidth/2/pps
+ * Tap: Seek video
  */
 const TimelineUI = {
   container: null,
   canvas: null,
   ctx: null,
   pixelsPerSecond: 80,
-  scrollOffset: 0,
+  scrollOffset: -4, // Start with 0 at center like professional editor
   trackHeight: 45,
   tracks: ['V1', 'V2', 'Text', 'A1', 'A2'],
   clips: [],
@@ -34,9 +36,14 @@ const TimelineUI = {
     this.ctx.scale(2,2);
 
     this.container.appendChild(this.canvas);
+    
+    // Set initial offset so 0s is at center like your screenshots
+    const centerOffset = (this.canvas.width/2 / 2) / this.pixelsPerSecond;
+    this.scrollOffset = -centerOffset + 0.2;
+    
     this.bindEvents();
     this.render();
-    console.log('TimelineUI v1.7 Ready - Real Import');
+    console.log('TimelineUI v1.8 Professional - Start at Center');
   },
 
   timeToPixel(time) {
@@ -48,6 +55,11 @@ const TimelineUI = {
   },
 
   addClip(clip) {
+    // If first clip, reset to professional start position
+    if(this.clips.length === 0) {
+      const centerOffset = (this.canvas ? this.canvas.width/2/2 : 180) / this.pixelsPerSecond;
+      this.scrollOffset = -centerOffset + 0.2;
+    }
     this.clips.push(clip);
     this.render();
   },
@@ -57,12 +69,13 @@ const TimelineUI = {
     return index * this.trackHeight + 20;
   },
 
-  // Clear all dummy clips - for Real Import
   clearAll() {
     this.clips = [];
     this.selectedClip = null;
+    const centerOffset = (this.canvas ? this.canvas.width/2/2 : 180) / this.pixelsPerSecond;
+    this.scrollOffset = -centerOffset + 0.2;
     this.render();
-    console.log('Timeline cleared - Ready for real video');
+    console.log('Timeline cleared - Professional Start Ready');
   },
 
   render() {
@@ -97,7 +110,7 @@ const TimelineUI = {
       const w = clip.duration * this.pixelsPerSecond;
       const trackY = this.getTrackY(clip.track || 'V1');
       
-      if(x + w < -50 || x > width+50) return;
+      if(x + w < -100 || x > width+100) return;
 
       let color = '#FF3B30';
       if(clip.track === 'V2') color = '#4CAF50';
@@ -122,6 +135,7 @@ const TimelineUI = {
       this.ctx.font = '8px monospace';
       this.ctx.fillText(clip.duration.toFixed(1)+'s', x+4, trackY+28);
 
+      // White trim handles
       this.ctx.fillStyle = '#FFF';
       this.ctx.fillRect(x, trackY+2, 4, this.trackHeight-4);
       this.ctx.fillRect(x+w-4, trackY+2, 4, this.trackHeight-4);
@@ -131,6 +145,7 @@ const TimelineUI = {
       }
     });
 
+    // RED Playhead - Fixed Center - Professional
     const centerX = width / 2;
     this.ctx.fillStyle = '#FF3B30';
     this.ctx.fillRect(centerX-1, 0, 2, height);
@@ -168,10 +183,11 @@ const TimelineUI = {
       minorStep = 0.1;
     }
     
-    const startTime = Math.floor(this.scrollOffset / majorStep) * majorStep;
-    const endTime = Math.ceil((this.scrollOffset + width / pps) / majorStep) * majorStep;
+    const startTime = Math.floor(this.scrollOffset / majorStep) * majorStep - 2;
+    const endTime = Math.ceil((this.scrollOffset + width / pps) / majorStep) * majorStep + 2;
     
     for(let t=startTime; t<=endTime; t+=minorStep) {
+      if(t < -5) continue;
       const x = this.timeToPixel(t);
       if(x < -20 || x > width+20) continue;
       
@@ -183,9 +199,10 @@ const TimelineUI = {
         this.ctx.fillStyle = '#BBB';
         this.ctx.font = '9px monospace';
         if(majorStep >= 2) {
-          if(t % 2 === 0) this.ctx.fillText(t+'s', x+2, 12);
+          if(t % 2 === 0) this.ctx.fillText((t<0?0:t)+'s', x+2, 12);
         } else {
-          this.ctx.fillText(t.toFixed(1)+'s', x+2, 12);
+          const label = t<0? '0.0s' : t.toFixed(1)+'s';
+          this.ctx.fillText(label, x+2, 12);
         }
       } else {
         this.ctx.fillStyle = '#333';
@@ -203,10 +220,8 @@ const TimelineUI = {
     if(!waveform || waveform.length===0) return;
     const h = this.trackHeight - 8;
     const middle = y + h/2 + 4;
-    
     this.ctx.fillStyle = 'rgba(255,255,255,0.5)';
     const step = w / waveform.length;
-    
     for(let i=0; i<waveform.length; i++) {
       const px = x + i*step;
       const min = waveform[i].min * (h/2);
@@ -243,14 +258,12 @@ const TimelineUI = {
     }, {passive: false});
 
     this.canvas.addEventListener('touchend', () => this.handleEnd());
-
     this.canvas.addEventListener('mousedown', (e) => {
       const rect = this.canvas.getBoundingClientRect();
       this.handleStart(e.clientX - rect.left, e.clientY - rect.top);
       lastX = e.clientX - rect.left;
       this.isDragging = true;
     });
-
     this.canvas.addEventListener('mousemove', (e) => {
       if(!this.isDragging) return;
       const rect = this.canvas.getBoundingClientRect();
@@ -259,7 +272,6 @@ const TimelineUI = {
       this.handleMove(deltaX, x);
       lastX = x;
     });
-
     this.canvas.addEventListener('mouseup', () => {
       this.isDragging = false;
       this.handleEnd();
@@ -281,9 +293,9 @@ const TimelineUI = {
       const clipX = this.timeToPixel(clickedClip.startTime);
       const clipW = clickedClip.duration * this.pixelsPerSecond;
       
-      if(Math.abs(x - clipX) < 10) {
+      if(Math.abs(x - clipX) < 12) {
         this.dragType = 'trim-left';
-      } else if(Math.abs(x - (clipX+clipW)) < 10) {
+      } else if(Math.abs(x - (clipX+clipW)) < 12) {
         this.dragType = 'trim-right';
       } else {
         this.dragType = 'move';
@@ -295,7 +307,6 @@ const TimelineUI = {
       if(navigator.vibrate) navigator.vibrate(30);
       this.render();
 
-      // Load into player
       if(window.Player && clickedClip.type === 'video') {
         Player.loadClip(clickedClip);
       }
@@ -303,16 +314,32 @@ const TimelineUI = {
       this.selectedClip = null;
       this.dragType = 'scroll';
       this.dragStartX = x;
+      
+      // PROFESSIONAL: Tap ruler/timeline to SEEK video
+      if(time >= 0 && window.Player) {
+        Player.seekTo(time);
+      }
+      this.render();
     }
   },
 
   handleMove(deltaX, currentX) {
-    if(!this.selectedClip && this.dragType !== 'scroll') return;
+    if(!this.selectedClip && this.dragType !== 'scroll') {
+      if(this.dragType === 'scroll') {
+        const deltaTime = deltaX / this.pixelsPerSecond;
+        this.scrollOffset -= deltaTime;
+        // Allow negative like professional editors
+        if(this.scrollOffset < -10) this.scrollOffset = -10;
+        this.render();
+      }
+      return;
+    }
 
     const deltaTime = deltaX / this.pixelsPerSecond;
 
     if(this.dragType === 'move' && this.selectedClip) {
       this.selectedClip.startTime = this.dragStartClip.startTime + deltaTime;
+      if(this.selectedClip.startTime < 0) this.selectedClip.startTime = 0;
       
       if(window.SnapEngine) {
         const snapResult = SnapEngine.checkSnap(this.selectedClip, this.clips);
@@ -324,19 +351,24 @@ const TimelineUI = {
     } else if(this.dragType === 'trim-left' && this.selectedClip) {
       const newStart = this.dragStartClip.startTime + deltaTime;
       const newDuration = this.dragStartClip.duration - deltaTime;
-      if(newDuration > 0.1) {
+      if(newDuration > 0.2 && newStart >= 0) {
         this.selectedClip.startTime = newStart;
         this.selectedClip.duration = newDuration;
         this.selectedClip.sourceOffset = (this.dragStartClip.sourceOffset || 0) + deltaTime;
+        // Update video element if trimming
+        if(window.Player) {
+          const v = document.getElementById('realVideo');
+          if(v) v.currentTime = this.selectedClip.sourceOffset || 0;
+        }
       }
     } else if(this.dragType === 'trim-right' && this.selectedClip) {
       const newDuration = this.dragStartClip.duration + deltaTime;
-      if(newDuration > 0.1) {
+      if(newDuration > 0.2) {
         this.selectedClip.duration = newDuration;
       }
     } else if(this.dragType === 'scroll') {
       this.scrollOffset -= deltaTime;
-      if(this.scrollOffset < 0) this.scrollOffset = 0;
+      if(this.scrollOffset < -10) this.scrollOffset = -10;
       this.render();
       return;
     }
@@ -350,12 +382,15 @@ const TimelineUI = {
   },
 
   setZoom(pps) {
+    const oldPps = this.pixelsPerSecond;
+    const centerTime = this.pixelToTime((this.canvas.width/2/2));
+    
     this.pixelsPerSecond = Math.max(20, Math.min(200, pps));
-    if(window.MarkersEngine) {
-      const currentTime = MarkersEngine.playheadTime;
-      const screenWidth = this.canvas ? this.canvas.width/2 : 360;
-      this.scrollOffset = currentTime - (screenWidth/2 / this.pixelsPerSecond);
-      if(this.scrollOffset < 0) this.scrollOffset = 0;
+    
+    // Keep center time same while zooming - Professional
+    if(this.canvas) {
+      const centerX = this.canvas.width/2/2;
+      this.scrollOffset = centerTime - (centerX / this.pixelsPerSecond);
     }
     this.render();
   },
