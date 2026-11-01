@@ -1,90 +1,39 @@
 /**
- * js/player/player.js - REAL Player v2 - Does NOT delete Import Button
+ * js/player/player.js - SUPER SIMPLE - Just play/pause real video
  */
 const Player = {
   videoElement: null,
-  currentTime: 0,
-  isPlaying: false,
-  currentClip: null,
 
   init() {
     this.videoElement = document.getElementById('realVideo');
-    if(!this.videoElement) return;
-    
-    this.videoElement.addEventListener('timeupdate', ()=>{
-      this.currentTime = this.videoElement.currentTime;
-    });
-
-    this.videoElement.addEventListener('ended', ()=>{
-      this.isPlaying = false;
-      this.updateOverlay();
-    });
-
-    this.videoElement.addEventListener('play', ()=>{
-      this.isPlaying = true;
-      this.updateOverlay();
-    });
-
-    this.videoElement.addEventListener('pause', ()=>{
-      this.isPlaying = false;
-      this.updateOverlay();
-    });
-
-    console.log('Real Player v2 Ready');
+    console.log('Simple Player Ready');
   },
 
   loadClip(clip) {
-    if(!clip || !clip.url) return;
-    if(!this.videoElement) this.init();
-    
-    this.currentClip = clip;
-    this.videoElement.src = clip.url;
-    this.videoElement.load();
-    this.videoElement.style.display = 'block';
-    
-    const importBtn = document.getElementById('importBtn');
-    if(importBtn) importBtn.style.display = 'none';
-    
-    this.videoElement.onloadeddata = () => {
-      this.videoElement.currentTime = clip.sourceOffset || 0;
-      const status = document.getElementById('status');
-      if(status) status.textContent = `Playing: ${clip.name} - ${clip.duration.toFixed(1)}s`;
-    };
-    
-    console.log('Loaded REAL video:', clip.name);
+    // Already handled in media-import.js - nothing needed
+    console.log('loadClip called', clip?.name);
   },
 
   play() {
-    if(this.videoElement && this.videoElement.src) {
-      this.videoElement.play();
-    }
+    const v = document.getElementById('realVideo');
+    if(v) v.play();
   },
 
   pause() {
-    if(this.videoElement) this.videoElement.pause();
+    const v = document.getElementById('realVideo');
+    if(v) v.pause();
   },
 
   togglePlay() {
-    if(this.isPlaying) this.pause();
-    else this.play();
+    const v = document.getElementById('realVideo');
+    if(!v) return;
+    if(v.paused) v.play();
+    else v.pause();
   },
 
   seekTo(time) {
-    this.currentTime = time;
-    if(this.currentClip && this.videoElement) {
-      const clipTime = time - this.currentClip.startTime + (this.currentClip.sourceOffset||0);
-      if(!this.isPlaying && clipTime>=0) {
-        this.videoElement.currentTime = clipTime;
-      }
-    }
-  },
-
-  updateOverlay() {
-    const overlay = document.getElementById('playOverlay');
-    if(!overlay) return;
-    overlay.style.display = this.isPlaying ? 'none' : 'block';
-  },
-
-  getCurrentTime(){ return this.currentTime; }
+    // For now do nothing - just timeline scroll
+    console.log('seekTo', time);
+  }
 };
 window.Player = Player;
