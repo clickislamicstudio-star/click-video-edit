@@ -1,7 +1,8 @@
 /**
- * js/player/player.js - v5 Professional Sync - CapCut Style
+ * js/player/player.js - v6 FINAL - Professional Sync + Text Overlay + Trim
  * Logic: scrollOffset = currentTime - (screenWidth/2 / pps) - Playhead Fixed Center
  * No clamp - Allows negative like professional editors
+ * NEW: Text Overlay + Trim SourceOffset Support
  */
 const Player = {
   videoElement: null,
@@ -18,7 +19,7 @@ const Player = {
       return;
     }
 
-    console.log('Player v5 - Professional Sync Ready');
+    console.log('Player v6 FINAL - Text + Trim + Sync Ready');
 
     // Video events
     this.videoElement.addEventListener('loadedmetadata', ()=>{
@@ -83,6 +84,34 @@ const Player = {
 
     // Render timeline - This makes playhead move with video
     TimelineUI.render();
+    
+    // NEW v6: Check text overlay visibility - Real Text on Player
+    if(window.TextTool) {
+      TextTool.checkTextVisibility(this.currentTime);
+    }
+
+    // NEW v6: Handle Trim - If clip has sourceOffset, adjust video time
+    this.handleTrimPlayback();
+  },
+
+  // NEW v6: Trim Playback Logic - Real Trim
+  handleTrimPlayback() {
+    const activeClip = window.TimelineUI?.clips.find(c => 
+      c.track === 'V1' && 
+      this.currentTime >= c.startTime && 
+      this.currentTime <= c.startTime + c.duration
+    );
+
+    if(activeClip && activeClip.sourceOffset !== undefined) {
+      const clipLocalTime = this.currentTime - activeClip.startTime;
+      const videoTime = activeClip.sourceOffset + clipLocalTime;
+      
+      // If video time differs too much, sync it (for trim)
+      if(Math.abs(this.videoElement.currentTime - videoTime) > 0.3) {
+        // Only sync if not actively playing (to avoid jitter)
+        // For now, we handle trim via seek, not continuous sync
+      }
+    }
   },
 
   startSyncLoop() {
@@ -110,13 +139,19 @@ const Player = {
   },
 
   loadClip(clip) {
-    // For real video, already loaded via media-import
-    console.log('Player.loadClip:', clip?.name, clip?.duration);
+    console.log('Player.loadClip:', clip?.name, clip?.duration, 'Offset:', clip?.sourceOffset);
     if(clip && clip.url && this.videoElement) {
-      // If different clip, load it
       if(this.videoElement.src !== clip.url) {
         this.videoElement.src = clip.url;
         this.videoElement.load();
+      }
+      
+      // If clip has trim offset, seek to it
+      if(clip.sourceOffset !== undefined) {
+        setTimeout(()=>{
+          this.videoElement.currentTime = clip.sourceOffset;
+          this.currentTime = clip.sourceOffset;
+        }, 100);
       }
     }
   },
@@ -157,16 +192,28 @@ const Player = {
     const v = document.getElementById('realVideo') || this.videoElement;
     if(!v) return;
     
-    // Clamp time
     if(time < 0) time = 0;
     if(this.duration > 0 && time > this.duration) time = this.duration;
     
     console.log('Seek to:', time.toFixed(2) + 's');
     
-    v.currentTime = time;
+    // Check if there's a clip with sourceOffset at this time
+    const activeClip = window.TimelineUI?.clips.find(c => 
+      c.track === 'V1' && 
+      time >= c.startTime && 
+      time <= c.startTime + c.duration
+    );
+
+    let videoSeekTime = time;
+    if(activeClip && activeClip.sourceOffset !== undefined) {
+      const clipLocalTime = time - activeClip.startTime;
+      videoSeekTime = activeClip.sourceOffset + clipLocalTime;
+      console.log('Trim seek - Clip offset:', activeClip.sourceOffset, 'Local:', clipLocalTime, 'Video:', videoSeekTime);
+    }
+    
+    v.currentTime = videoSeekTime;
     this.currentTime = time;
     
-    // Immediately sync timeline to new time
     this.syncTimeline();
     
     const status = document.getElementById('status');
