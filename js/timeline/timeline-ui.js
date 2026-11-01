@@ -1,6 +1,6 @@
 /**
- * js/timeline/timeline-ui.js - Professional Timeline UI v1.3
- * InShot/【entity-CapCut¦canonical_name=CapCut】 Level - Pinch Zoom + 2s Markers + Playhead Center
+ * js/timeline/timeline-ui.js - Professional Timeline UI v1.7
+ * Real Import - Clear Dummy - Pinch Zoom + 2s Markers + Playhead Center
  * Formula: screenX = (clipTime - scrollOffset) * pixelsPerSecond
  */
 const TimelineUI = {
@@ -36,7 +36,7 @@ const TimelineUI = {
     this.container.appendChild(this.canvas);
     this.bindEvents();
     this.render();
-    console.log('TimelineUI v1.3 Ready - Pinch Zoom');
+    console.log('TimelineUI v1.7 Ready - Real Import');
   },
 
   timeToPixel(time) {
@@ -55,6 +55,14 @@ const TimelineUI = {
   getTrackY(trackName) {
     const index = this.tracks.indexOf(trackName);
     return index * this.trackHeight + 20;
+  },
+
+  // Clear all dummy clips - for Real Import
+  clearAll() {
+    this.clips = [];
+    this.selectedClip = null;
+    this.render();
+    console.log('Timeline cleared - Ready for real video');
   },
 
   render() {
@@ -107,7 +115,7 @@ const TimelineUI = {
 
       this.ctx.fillStyle = '#FFF';
       this.ctx.font = '10px sans-serif';
-      const text = (clip.name || clip.type || 'Clip').substring(0, 12);
+      const text = (clip.name || clip.type || 'Clip').substring(0, 14);
       this.ctx.fillText(text, x+4, trackY+16);
       
       this.ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -203,7 +211,7 @@ const TimelineUI = {
       const px = x + i*step;
       const min = waveform[i].min * (h/2);
       const max = waveform[i].max * (h/2);
-      this.ctx.fillRect(px, middle+min, Math.max(1, step), max-min);
+      this.ctx.fillRect(px, middle+min, Math.max(1, step*0.8), max-min);
     }
   },
 
@@ -286,6 +294,11 @@ const TimelineUI = {
       
       if(navigator.vibrate) navigator.vibrate(30);
       this.render();
+
+      // Load into player
+      if(window.Player && clickedClip.type === 'video') {
+        Player.loadClip(clickedClip);
+      }
     } else {
       this.selectedClip = null;
       this.dragType = 'scroll';
