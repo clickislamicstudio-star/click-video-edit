@@ -24,110 +24,94 @@
 </style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Click v7.9 Media Stays + Photo + Pro Timeline</title>
+<title>Click v8.0 Pro Timeline Fix + Popup Fix</title>
 <style>
 :root{--blue:#2B8AFF;--bg:#0a0a0a;--border:#222;--green:#00D084;--orange:#FF9500}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:#fff;font-family:Roboto,sans-serif;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
-.header{height:46px;min-height:46px;background:#111;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid var(--border);flex-shrink:0;z-index:40}
-.ibtn{width:30px;height:30px;border-radius:50%;background:#1e1e1e;border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.export-btn{background:var(--blue);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-weight:700;cursor:pointer;font-size:12px}
+.header{height:44px;min-height:44px;background:#111;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid var(--border);flex-shrink:0;z-index:50}
+.ibtn{width:28px;height:28px;border-radius:50%;background:#1e1e1e;border:none;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.export-btn{background:var(--blue);color:#fff;border:none;padding:5px 10px;border-radius:7px;font-weight:700;cursor:pointer;font-size:11px}
 .canvas-wrap{flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;overflow:hidden;z-index:1}
 #realVideo,#realImage{width:100%;height:100%;object-fit:contain;display:none;background:#000;position:absolute;inset:0}
-#ph{display:flex;flex-direction:column;align-items:center;gap:10px;color:#666;text-align:center;padding:20px}
-.text-overlay{position:absolute;color:#FFEB3B;font-size:28px;font-weight:700;text-shadow:0 2px 8px #000;pointer-events:none;display:none;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%)}
-.controls{height:34px;min-height:34px;background:#151515;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid var(--border);flex-shrink:0;z-index:30}
-.controls-left{display:flex;align-items:center;gap:8px}
-.zoom-slider{width:60px;height:4px;background:#333;border-radius:2px;appearance:none;cursor:pointer}
+#ph{display:flex;flex-direction:column;align-items:center;gap:8px;color:#666;text-align:center;padding:16px}
+.text-overlay{position:absolute;color:#FFEB3B;font-size:26px;font-weight:700;text-shadow:0 2px 8px #000;pointer-events:none;display:none;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%)}
+.controls{height:32px;min-height:32px;background:#151515;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid var(--border);flex-shrink:0;z-index:40}
+.zoom-slider{width:70px;height:4px;background:#333;border-radius:2px;appearance:none;cursor:pointer}
 .zoom-slider::-webkit-slider-thumb{width:12px;height:12px;background:var(--blue);border-radius:50%;appearance:none;cursor:pointer}
-.timeline{height:200px;min-height:200px;background:#111;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;z-index:30;position:relative}
-.ruler{height:28px;min-height:28px;background:#0f0f0f;padding-left:102px;display:flex;align-items:center;font-size:10px;color:#999;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;overflow:hidden;white-space:nowrap}
-.ruler-marks{display:flex;gap:0;position:absolute;left:102px;right:0;top:0;bottom:0;align-items:center}
-.r-mark{font-size:9px;color:#666;border-left:1px solid #333;padding-left:4px;height:100%;display:flex;align-items:center;min-width:40px;flex-shrink:0}
-.r-mark.major{color:#aaa;font-weight:700;border-left-color:#555}
-.playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--blue);z-index:20;pointer-events:none;left:102px;transition:left 0.05s linear}
-.playhead::after{content:'';position:absolute;top:-4px;left:-4px;width:10px;height:10px;background:var(--blue);border-radius:50%}
+.timeline{height:210px;min-height:210px;background:#111;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;z-index:30;position:relative;overflow:hidden}
+.ruler-wrap{height:32px;min-height:32px;background:#0f0f0f;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;overflow:hidden;display:flex}
+.ruler-label{width:100px;min-width:100px;background:#161616;display:flex;align-items:center;justify-content:center;font-size:9px;color:#666;border-right:1px solid var(--border);flex-shrink:0}
+.ruler-canvas{flex:1;position:relative;overflow:hidden;background:#0f0f0f;cursor:pointer}
+#rulerCanvas{width:100%;height:100%;display:block}
 .tracks{flex:1;overflow:auto;background:#111;display:flex;flex-direction:column}
-.track{height:36px;min-height:36px;display:flex;border-bottom:1px solid #1a1a1a;flex-shrink:0;align-items:stretch;transition:background 0.2s}
+.track{height:36px;min-height:36px;display:flex;border-bottom:1px solid #1a1a1a;flex-shrink:0;align-items:stretch;transition:background 0.15s;position:relative}
 .track.sel{background:#1e1e1e}
 .track.media-always{background:#111;border-bottom:2px solid var(--blue)}
-.t-label{width:100px;min-width:100px;background:#161616;display:flex;align-items:center;gap:5px;padding-left:8px;font-size:10px;color:#aaa;border-right:1px solid var(--border);flex-shrink:0;cursor:pointer;transition:all 0.2s;border-left:3px solid transparent}
+.t-label{width:100px;min-width:100px;background:#161616;display:flex;align-items:center;gap:4px;padding-left:6px;font-size:10px;color:#aaa;border-right:1px solid var(--border);flex-shrink:0;cursor:pointer;transition:all 0.15s;border-left:3px solid transparent}
 .t-label:hover{background:#1e1e1e;color:#fff}
 .t-label.sel{background:#1e1e1e;color:#fff;border-left-color:var(--blue)}
 .t-label.media-perm{border-left-color:var(--blue);background:#1a1a1a;color:#fff;font-weight:700}
-.t-label .ico{width:20px;height:20px;background:#222;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.t-label .ico{width:18px;height:18px;background:#222;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
 .t-label.sel .ico,.t-label.media-perm .ico{background:var(--blue);color:#fff}
 .t-content{flex:1;position:relative;background:#111;cursor:pointer;overflow:hidden}
-.clip{position:absolute;top:2px;bottom:2px;background:var(--blue);border-radius:4px;padding:0 6px;font-size:10px;display:flex;align-items:center;cursor:pointer;white-space:nowrap;border:1px solid transparent;overflow:hidden;max-width:100%}
-.clip.sel{border-color:#fff;box-shadow:0 0 0 1px var(--blue)}
+.clip{position:absolute;top:2px;bottom:2px;background:var(--blue);border-radius:4px;padding:0 6px;font-size:10px;display:flex;align-items:center;cursor:pointer;white-space:nowrap;border:1px solid transparent;overflow:hidden;user-select:none}
+.clip.sel{border-color:#fff;box-shadow:0 0 0 1px var(--blue);z-index:5}
 .clip.photo{background:var(--orange);color:#000;font-weight:700}
 .clip.text{background:var(--green);color:#000;font-weight:700}
-.clip.audio{background:#FF9500}
-.main-bar{height:52px;min-height:52px;background:#1a1a1a;display:flex;justify-content:space-around;align-items:center;border-top:1px solid var(--border);flex-shrink:0;z-index:25;padding:0 2px;gap:1px}
-.main-tab{border:none;background:transparent;color:#777;font-size:8px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:3px 4px;border-radius:10px;cursor:pointer;flex:1;max-width:68px;min-width:0;margin:1px;transition:all 0.2s}
+.playhead-line{position:absolute;top:0;bottom:0;width:2px;background:var(--blue);z-index:10;pointer-events:none;left:100px}
+.playhead-line::before{content:'';position:absolute;top:0;left:-5px;width:12px;height:12px;background:var(--blue);border-radius:0 0 4px 4px}
+.ctx-bar{height:0;min-height:0;overflow:hidden;background:#1e1e1e;border-top:1px solid #333;display:flex;flex-direction:column;transition:all 0.28s ease;flex-shrink:0;z-index:35;opacity:0}
+.ctx-bar.show{height:110px;min-height:110px;opacity:1;border-top:1px solid #444}
+.ctx-row{display:flex;justify-content:space-around;padding:6px 2px;border-bottom:1px solid #2a2a2a;overflow:auto;gap:2px;flex-shrink:0}
+.ctx-btn{border:none;background:transparent;color:#ccc;font-size:8px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 5px;cursor:pointer;min-width:50px;flex-shrink:0}
+.ctx-btn .ico{width:32px;height:32px;background:#2a2a2a;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.ctx-btn.del .ico{background:#3a1a1a;color:#ff5555}
+.done{margin:4px 8px;background:var(--blue);color:#fff;border:none;height:32px;border-radius:16px;font-weight:700;cursor:pointer;font-size:11px;flex-shrink:0}
+.main-bar{height:50px;min-height:50px;background:#1a1a1a;display:flex;justify-content:space-around;align-items:center;border-top:1px solid var(--border);flex-shrink:0;z-index:45;padding:0 2px;gap:1px}
+.main-tab{border:none;background:transparent;color:#777;font-size:8px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:3px 4px;border-radius:10px;cursor:pointer;flex:1;max-width:66px;min-width:0;margin:1px;transition:all 0.15s}
 .main-tab .ico{width:22px;height:22px;background:#222;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px}
 .main-tab.active{background:#fff;color:#000;padding:4px 6px;border-radius:12px;margin:2px 3px}
 .main-tab.active .ico{background:#000;color:#fff;width:20px;height:20px;font-size:11px}
-.ctx-bar{position:absolute;left:0;right:0;bottom:52px;background:#1e1e1e;border-top:1px solid #333;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.32s;z-index:35;box-shadow:0 -4px 20px rgba(0,0,0,0.5);border-radius:12px 12px 0 0;overflow:hidden}
-.ctx-bar.show{transform:translateX(0)}
-.ctx-row{display:flex;justify-content:space-around;padding:6px 2px;border-bottom:1px solid #2a2a2a;overflow:auto;gap:2px}
-.ctx-btn{border:none;background:transparent;color:#ccc;font-size:8px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 5px;cursor:pointer;min-width:46px}
-.ctx-btn .ico{width:30px;height:30px;background:#2a2a2a;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
-.ctx-btn.del .ico{background:#3a1a1a;color:#ff5555}
-.done{margin:6px;background:var(--blue);color:#fff;border:none;height:38px;border-radius:19px;font-weight:700;cursor:pointer;font-size:12px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:flex-end;z-index:100}
 .modal.show{display:flex}
 .sheet{width:100%;max-height:85vh;background:#151515;border-radius:18px 18px 0 0;padding:12px;overflow:auto}
-.font-tabs{display:flex;gap:4px;overflow:auto;padding:8px 0;border-bottom:1px solid #222}
+.font-tabs{display:flex;gap:4px;overflow:auto;padding:6px 0;border-bottom:1px solid #222}
 .f-tab{border:none;background:#1e1e1e;color:#888;padding:5px 10px;border-radius:14px;font-size:10px;white-space:nowrap;cursor:pointer;flex-shrink:0}
 .f-tab.active{background:var(--blue);color:#fff}
 .font-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}
 .f-item{background:#1e1e1e;padding:8px;border-radius:7px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border:2px solid transparent;font-size:10px}
 .f-item.sel{border-color:var(--blue)}
 .badge{font-size:8px;background:var(--green);color:#000;padding:1px 5px;border-radius:7px;font-weight:700;margin-left:4px}
-.import-btn-main{background:var(--blue);color:#fff;border:none;padding:9px 16px;border-radius:18px;font-weight:700;cursor:pointer;font-size:11px}
-.status-dot{width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;margin-right:3px}
+.import-btn-main{background:var(--blue);color:#fff;border:none;padding:8px 14px;border-radius:16px;font-weight:700;cursor:pointer;font-size:11px}
+.status-dot{width:5px;height:5px;background:var(--green);border-radius:50%;display:inline-block;margin-right:3px}
 </style>
 </head>
 <body>
 
 <div class="header">
-<div style="display:flex;gap:4px;align-items:center">
-<button class="ibtn" onclick="alert('Home Projects')">‹</button>
-<button class="ibtn" onclick="document.getElementById('tutorialModal').classList.add('show')">?</button>
-</div>
-<div style="font-weight:700;font-size:11px;display:flex;align-items:center">Click Editor <span style="opacity:0.6;font-size:9px;margin-left:3px">(16:9)</span> <span class="badge">v7.9 MEDIA STAYS</span></div>
+<div style="display:flex;gap:4px;align-items:center"><button class="ibtn" onclick="alert('Home')">‹</button><button class="ibtn" onclick="document.getElementById('tutorialModal').classList.add('show')">?</button></div>
+<div style="font-weight:700;font-size:11px;display:flex;align-items:center">Click Editor <span style="opacity:0.6;font-size:9px;margin-left:3px">(16:9)</span> <span class="badge">v8.0 PRO FIX</span></div>
 <div><button class="export-btn" onclick="document.getElementById('exportModal').classList.add('show')">Export</button></div>
 </div>
 
 <div class="canvas-wrap" id="canvasWrap">
-<div id="ph">
-<div style="font-size:12px;color:#555">Click + Media to Add Photo/Video</div>
-<button class="import-btn-main" onclick="document.getElementById('fileInput').click()">+ Import Media</button>
-<div style="font-size:8px;color:#555;margin-top:2px"><span class="status-dot"></span>Photo • Video • Audio • FREE • No Watermark • Media Always Stays</div>
-</div>
+<div id="ph"><div style="font-size:11px;color:#555">Click + Media to Add Photo/Video</div><button class="import-btn-main" onclick="document.getElementById('fileInput').click()">+ Import Media</button><div style="font-size:8px;color:#555;margin-top:2px"><span class="status-dot"></span>Pro Timeline Fixed • Popup Not Over Timeline • Photo Support</div></div>
 <video id="realVideo" playsinline></video>
 <img id="realImage" alt="preview">
 <div class="text-overlay" id="textOverlay">سورة الملك</div>
 </div>
 
 <div class="controls">
-<div class="controls-left">
-<button class="ibtn" id="playBtn" style="width:26px;height:26px;background:#222">▶</button>
-<span style="font-size:8px;color:#777">MM:SS | Media Stays | Photo+Video</span>
-</div>
-<div style="display:flex;align-items:center;gap:6px">
-<span style="font-size:8px;color:#777">Zoom</span>
-<input type="range" class="zoom-slider" id="zoomSlider" min="5" max="300" value="60">
-<span style="font-size:8px;color:#777" id="zoomVal">60px/s</span>
-</div>
-<button class="ibtn" style="width:26px;height:26px" onclick="alert('Fit/Fill/Center')">⛶</button>
+<div style="display:flex;align-items:center;gap:6px"><button class="ibtn" id="playBtn" style="width:26px;height:26px;background:#222">▶</button><span style="font-size:8px;color:#777" id="timeDisplay">00:00 / 00:00</span></div>
+<div style="display:flex;align-items:center;gap:4px"><span style="font-size:8px;color:#777">Zoom</span><input type="range" class="zoom-slider" id="zoomSlider" min="5" max="300" value="80"><span style="font-size:8px;color:#777" id="zoomVal">80px/s</span></div>
+<button class="ibtn" style="width:26px;height:26px" onclick="alert('Fit')">⛶</button>
 </div>
 
 <div class="timeline" id="timelineBox">
-<div class="ruler" id="ruler">
-<div class="ruler-marks" id="rulerMarks">0 •• 00:05 •• 00:10 •• 00:15 •• 00:30 •• 01:00 •• Pro Timeline - Media Always Stays - Photo Support</div>
-<div class="playhead" id="playhead"></div>
+<div class="ruler-wrap">
+<div class="ruler-label">MM:SS</div>
+<div class="ruler-canvas" id="rulerCanvasWrap"><canvas id="rulerCanvas"></canvas><div class="playhead-line" id="playheadLine"></div></div>
 </div>
 <div class="tracks" id="tracks"></div>
 </div>
@@ -135,7 +119,7 @@ body{background:var(--bg);color:#fff;font-family:Roboto,sans-serif;height:100vh;
 <div class="ctx-bar" id="contextualToolbar">
 <div class="ctx-row" id="ctxRow1"></div>
 <div class="ctx-row" id="ctxRow2"></div>
-<button class="done" id="doneBtn">Done</button>
+<button class="done" id="doneBtn">Done - Timeline Stays Visible Above</button>
 </div>
 
 <div class="main-bar" id="mainToolbar">
@@ -146,72 +130,45 @@ body{background:var(--bg);color:#fff;font-family:Roboto,sans-serif;height:100vh;
 <button class="main-tab" data-tab="effect"><span class="ico">✦</span><span>Effect</span></button>
 </div>
 
-<div class="modal" id="fontModal">
-<div class="sheet">
-<div style="display:flex;justify-content:space-between;margin-bottom:8px"><h3 style="font-size:12px">Font - Urdu/Arabic/English - Media Always Stays</h3><button class="ibtn" onclick="document.getElementById('fontModal').classList.remove('show')">✕</button></div>
-<div class="font-tabs" id="fontTabs"><button class="f-tab">Basic</button><button class="f-tab">English</button><button class="f-tab active">Urdu</button><button class="f-tab">Arabic</button><button class="f-tab">All</button></div>
-<div class="font-grid" id="fontGrid"></div>
-<div style="display:flex;gap:5px;margin-top:8px"><button style="flex:1;background:#222;color:#fff;border:none;padding:9px;border-radius:16px;font-size:11px" onclick="document.getElementById('fontModal').classList.remove('show')">Multi</button><button style="flex:2;background:var(--blue);color:#fff;border:none;padding:9px;border-radius:16px;font-weight:700;font-size:11px" onclick="document.getElementById('fontModal').classList.remove('show')">Done</button></div>
-</div>
-</div>
-
-<div class="modal" id="settingsModal"><div class="sheet"><div style="display:flex;justify-content:space-between"><h3 style="font-size:12px">Setting - Media Always Stays</h3><button class="ibtn" onclick="document.getElementById('settingsModal').classList.remove('show')">✕</button></div><button style="width:100%;background:var(--blue);color:#fff;border:none;padding:9px;border-radius:16px;margin-top:10px;font-size:11px" onclick="document.getElementById('settingsModal').classList.remove('show')">Done</button></div></div>
-<div class="modal" id="exportModal"><div class="sheet"><div style="display:flex;justify-content:space-between"><h3 style="font-size:12px">Export - Photo+Video - QHD 4K - No Watermark</h3><button class="ibtn" onclick="document.getElementById('exportModal').classList.remove('show')">✕</button></div><p style="font-size:10px;color:#888;margin:8px 0">Media Always Stays - Photo • Video • Audio - FREE Forever - Offline</p><button style="width:100%;background:var(--blue);color:#fff;border:none;padding:10px;border-radius:16px;font-weight:700;margin-top:8px;font-size:11px" onclick="alert('Export Photo+Video No Watermark')">↗ Export (183 MB)</button></div></div>
-<div class="modal" id="tutorialModal"><div class="sheet"><div style="display:flex;justify-content:space-between"><h3 style="font-size:12px">Tutorial - Media Always Stays + Photo Support</h3><button class="ibtn" onclick="document.getElementById('tutorialModal').classList.remove('show')">✕</button></div><div style="margin-top:8px"><div style="background:#1e1e1e;padding:7px;border-radius:5px;margin-bottom:4px;font-size:10px"><span class="status-dot"></span>Media Always Stays - Other buttons below it - No Disappear</div><div style="background:#1e1e1e;padding:7px;border-radius:5px;margin-bottom:4px;font-size:10px"><span class="status-dot"></span>Photo Support - Import Photo for Video - Orange Clip</div><div style="background:#1e1e1e;padding:7px;border-radius:5px;font-size:10px"><span class="status-dot"></span>Pro Timeline - Zoom 5-300px/s - Playhead - MM:SS - Master Formula screenX = (time - scrollOffset) * pps</div></div></div></div>
+<div class="modal" id="fontModal"><div class="sheet"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><h3 style="font-size:12px">Font - Urdu/Arabic - Pro Timeline Fixed</h3><button class="ibtn" onclick="document.getElementById('fontModal').classList.remove('show')">✕</button></div><div class="font-tabs" id="fontTabs"><button class="f-tab">Basic</button><button class="f-tab">English</button><button class="f-tab active">Urdu</button><button class="f-tab">Arabic</button></div><div class="font-grid" id="fontGrid"></div><button style="width:100%;background:var(--blue);color:#fff;border:none;padding:8px;border-radius:14px;font-weight:700;margin-top:8px;font-size:11px" onclick="document.getElementById('fontModal').classList.remove('show')">Done</button></div></div>
+<div class="modal" id="exportModal"><div class="sheet"><div style="display:flex;justify-content:space-between"><h3 style="font-size:12px">Export - Pro Timeline - Photo+Video</h3><button class="ibtn" onclick="document.getElementById('exportModal').classList.remove('show')">✕</button></div><button style="width:100%;background:var(--blue);color:#fff;border:none;padding:10px;border-radius:14px;font-weight:700;margin-top:8px;font-size:11px" onclick="alert('Export')">↗ Export No Watermark</button></div></div>
+<div class="modal" id="tutorialModal"><div class="sheet"><div style="display:flex;justify-content:space-between"><h3 style="font-size:12px">Tutorial - Pro Timeline Fixed + Popup Fix</h3><button class="ibtn" onclick="document.getElementById('tutorialModal').classList.remove('show')">✕</button></div><div style="margin-top:8px;font-size:10px;line-height:1.6"><div style="background:#1e1e1e;padding:6px;border-radius:5px;margin-bottom:4px"><b>Fix 1 - Ruler:</b> Canvas-based MM:SS ruler - No Text Overlap - Dot system - screenX = (time - scrollOffset) * pps</div><div style="background:#1e1e1e;padding:6px;border-radius:5px;margin-bottom:4px"><b>Fix 2 - Popup:</b> Popup does NOT cover Timeline - Timeline stays visible above - Professional NLE like VLLO/CapCut</div><div style="background:#1e1e1e;padding:6px;border-radius:5px"><b>Media Always Stays:</b> + Media always top - Other below - No disappear</div></div></div></div>
 
 <input type="file" id="fileInput" accept="video/*,image/*,audio/*" multiple style="display:none">
-<input type="file" id="fontFileInput" accept=".ttf,.otf" style="display:none">
 
 <script>
-console.log('v7.9 MEDIA STAYS + PHOTO + PRO TIMELINE - Fixed All Reported Issues');
-const ctxBar=document.getElementById('contextualToolbar');
-const ctxRow1=document.getElementById('ctxRow1');
-const ctxRow2=document.getElementById('ctxRow2');
+console.log('v8.0 PRO TIMELINE FIX + POPUP FIX - Professional');
 const fileInput=document.getElementById('fileInput');
 const realVideo=document.getElementById('realVideo');
 const realImage=document.getElementById('realImage');
 const ph=document.getElementById('ph');
 const textOverlay=document.getElementById('textOverlay');
 const tracks=document.getElementById('tracks');
-const ruler=document.getElementById('ruler');
-const rulerMarks=document.getElementById('rulerMarks');
-const playhead=document.getElementById('playhead');
+const playheadLine=document.getElementById('playheadLine');
 const zoomSlider=document.getElementById('zoomSlider');
 const zoomVal=document.getElementById('zoomVal');
+const timeDisplay=document.getElementById('timeDisplay');
+const ctxBar=document.getElementById('contextualToolbar');
+const ctxRow1=document.getElementById('ctxRow1');
+const ctxRow2=document.getElementById('ctxRow2');
+const rulerCanvas=document.getElementById('rulerCanvas');
+const rulerWrap=document.getElementById('rulerCanvasWrap');
 
 let currentTab='audio';
 let selectedTrackId='media';
-let pps=60;
+let pps=80;
+let scrollOffset=0;
 let currentTime=0;
+let duration=0;
 let mediaClips=[];
+let rulerCtx=null;
 
 const TAB_CONFIG={
-audio:[
-{id:'bgm',icon:'♪',label:'BGM',track:'♪ BGM',color:'#FF9500',action:'import'},
-{id:'sfx',icon:'∿',label:'SFX',track:'∿ SFX',color:'#FF2D55',action:'import'},
-{id:'voice',icon:'🎙',label:'Voice',track:'🎙 Voice',color:'#AF52DE',action:'record'}
-],
-graphic:[
-{id:'sticker',icon:'★',label:'Sticker',track:'★ Sticker',color:'#FFCC00',action:'sticker'},
-{id:'frame',icon:'▭',label:'Frame',track:'▭ Frame',color:'#5AC8FA',action:'frame'},
-{id:'particle',icon:'✦',label:'Particle',track:'✦ Particle',color:'#4CD964',action:'particle'}
-],
-text:[
-{id:'text',icon:'T',label:'Text',track:'T Text',color:'var(--green)',action:'text'},
-{id:'label',icon:'A',label:'Label',track:'A Label',color:'#FF9500',action:'text'},
-{id:'caption',icon:'☰',label:'Caption',track:'☰ Caption',color:'#007AFF',action:'caption'},
-{id:'auto',icon:'◉',label:'Auto',track:'◉ Auto',color:'#FF2D55',action:'autocap'}
-],
-pip:[
-{id:'pip_img',icon:'🖼',label:'Image',track:'🖼 PIP Img',color:'#5856D6',action:'import'},
-{id:'pip_vid',icon:'▶',label:'Video',track:'▶ PIP Vid',color:'#FF3B30',action:'import'},
-{id:'stock',icon:'★',label:'Stock',track:'★ Stock',color:'#4CD964',action:'stock'}
-],
-effect:[
-{id:'filter',icon:'◑',label:'Filter',track:'◑ Filter',color:'#5AC8FA',action:'filter'},
-{id:'effect',icon:'✦',label:'Effect',track:'✦ Effect',color:'#AF52DE',action:'effect'},
-{id:'blur',icon:'◫',label:'Blur',track:'◫ Blur',color:'#FF9500',action:'blur'}
-]
+audio:[{id:'bgm',icon:'♪',label:'BGM',track:'♪ BGM',color:'#FF9500',action:'import'},{id:'sfx',icon:'∿',label:'SFX',track:'∿ SFX',color:'#FF2D55',action:'import'},{id:'voice',icon:'🎙',label:'Voice',track:'🎙 Voice',color:'#AF52DE',action:'record'}],
+graphic:[{id:'sticker',icon:'★',label:'Sticker',track:'★ Sticker',color:'#FFCC00',action:'sticker'},{id:'frame',icon:'▭',label:'Frame',track:'▭ Frame',color:'#5AC8FA',action:'frame'},{id:'particle',icon:'✦',label:'Particle',track:'✦ Particle',color:'#4CD964',action:'particle'}],
+text:[{id:'text',icon:'T',label:'Text',track:'T Text',color:'var(--green)',action:'text'},{id:'label',icon:'A',label:'Label',track:'A Label',color:'#FF9500',action:'text'},{id:'caption',icon:'☰',label:'Caption',track:'☰ Caption',color:'#007AFF',action:'caption'},{id:'auto',icon:'◉',label:'Auto',track:'◉ Auto',color:'#FF2D55',action:'autocap'}],
+pip:[{id:'pip_img',icon:'🖼',label:'Image',track:'🖼 PIP Img',color:'#5856D6',action:'import'},{id:'pip_vid',icon:'▶',label:'Video',track:'▶ PIP Vid',color:'#FF3B30',action:'import'},{id:'stock',icon:'★',label:'Stock',track:'★ Stock',color:'#4CD964',action:'stock'}],
+effect:[{id:'filter',icon:'◑',label:'Filter',track:'◑ Filter',color:'#5AC8FA',action:'filter'},{id:'effect',icon:'✦',label:'Effect',track:'✦ Effect',color:'#AF52DE',action:'effect'},{id:'blur',icon:'◫',label:'Blur',track:'◫ Blur',color:'#FF9500',action:'blur'}]
 };
 
 document.querySelectorAll('.main-tab').forEach(tab=>{
@@ -224,18 +181,80 @@ hideCtx();
 };
 });
 
+function initRuler(){
+const rect=rulerWrap.getBoundingClientRect();
+rulerCanvas.width=rect.width*2;
+rulerCanvas.height=32*2;
+rulerCanvas.style.width=rect.width+'px';
+rulerCanvas.style.height='32px';
+rulerCtx=rulerCanvas.getContext('2d');
+rulerCtx.scale(2,2);
+drawRuler();
+}
+
+function drawRuler(){
+if(!rulerCtx) return;
+const w=rulerCanvas.width/2;
+const h=32;
+rulerCtx.clearRect(0,0,w,h);
+rulerCtx.fillStyle='#0f0f0f';
+rulerCtx.fillRect(0,0,w,h);
+
+// Master formula: screenX = (clipTime - scrollOffset) * pps
+// Ruler: time from 0 to duration or 60s
+const totalTime=Math.max(duration,60);
+const startTime=scrollOffset;
+const endTime=scrollOffset + w/pps;
+
+rulerCtx.strokeStyle='#333';
+rulerCtx.lineWidth=1;
+rulerCtx.fillStyle='#888';
+rulerCtx.font='9px Roboto';
+rulerCtx.textBaseline='middle';
+
+// Major ticks every 5s or 10s depending on zoom
+let majorStep=pps<30?10:pps<60?5:5;
+let minorStep=pps<30?5:pps<60?1:0.5;
+
+for(let t=Math.floor(startTime/majorStep)*majorStep; t<=endTime; t+=majorStep){
+if(t<0) continue;
+const x=(t - scrollOffset)*pps;
+if(x<0 || x>w) continue;
+// Major tick
+rulerCtx.strokeStyle='#555';
+rulerCtx.beginPath();
+rulerCtx.moveTo(x,0);
+rulerCtx.lineTo(x,h);
+rulerCtx.stroke();
+// Label MM:SS - No Zero Repeat Bug - MM:SS format
+const mm=Math.floor(t/60).toString().padStart(2,'0');
+const ss=Math.floor(t%60).toString().padStart(2,'0');
+rulerCtx.fillStyle='#aaa';
+rulerCtx.fillText(mm+':'+ss, x+4, h/2);
+}
+
+// Minor ticks
+rulerCtx.strokeStyle='#2a2a2a';
+for(let t=Math.floor(startTime/minorStep)*minorStep; t<=endTime; t+=minorStep){
+if(t<0 || t%majorStep===0) continue;
+const x=(t - scrollOffset)*pps;
+if(x<0 || x>w) continue;
+rulerCtx.beginPath();
+rulerCtx.moveTo(x,h*0.6);
+rulerCtx.lineTo(x,h);
+rulerCtx.stroke();
+}
+}
+
 function renderTracks(tabType){
 const config=TAB_CONFIG[tabType]||TAB_CONFIG['audio'];
-// Media Always Stays at Top - Persistent - No Disappear
 let html='';
-// Media Always - First Track - Always Visible - Blue Border
+// Media Always Stays - Persistent Top
 html+='<div class="track media-always sel" data-id="media"><div class="t-label media-perm sel" data-id="media" data-action="import"><span class="ico">◫</span><span>+ Media</span></div><div class="t-content" id="track-media" data-id="media"></div></div>';
-// Other Tracks Below Media - Based on Tab - Not Replacing Media
 config.forEach(item=>{
 html+='<div class="track" data-id="'+item.id+'"><div class="t-label" data-id="'+item.id+'" data-action="'+item.action+'"><span class="ico">'+item.icon+'</span><span>'+item.track+'</span></div><div class="t-content" id="track-'+item.id+'" data-id="'+item.id+'"></div></div>';
 });
 tracks.innerHTML=html;
-rulerMarks.textContent='0 •• 00:05 •• 00:10 •• 00:15 •• 00:30 •• 01:00 •• '+tabType.toUpperCase()+' - Media Always Stays - Photo+Video - Pro Timeline - MM:SS - pps:'+pps;
 
 tracks.querySelectorAll('.t-label').forEach(label=>{
 label.onclick=()=>{
@@ -246,62 +265,91 @@ tracks.querySelectorAll('.t-label').forEach(l=>l.classList.remove('sel'));
 tracks.querySelectorAll('.track').forEach(t=>t.classList.remove('sel'));
 label.classList.add('sel');
 label.closest('.track').classList.add('sel');
-console.log('Media Always Stays - Click:',id,action);
-
-if(action==='import'){
-fileInput.click();
-}else if(action==='text' || action==='caption' || action==='autocap'){
-addTextForId(id);
-}else if(action==='filter' || action==='effect' || action==='blur' || action==='sticker' || action==='frame' || action==='particle'){
-showFilterForId(id);
-}else{
-alert(label.textContent.trim()+' - '+action+' - Media Always Stays - Other below');
-}
+if(action==='import') fileInput.click();
+else if(action==='text' || action==='caption' || action==='autocap') addTextForId(id);
+else if(action==='filter' || action==='effect' || action==='blur' || action==='sticker') showFilterForId(id);
+else alert(label.textContent.trim()+' - '+action);
 };
 });
 
-tracks.querySelectorAll('.t-content').forEach(content=>{
-content.onclick=()=>{
-const id=content.dataset.id;
-const label=document.querySelector('.t-label[data-id="'+id+'"]');
-if(label) label.click();
+tracks.querySelectorAll('.t-content').forEach(c=>{
+c.onclick=()=>{
+const l=document.querySelector('.t-label[data-id="'+c.dataset.id+'"]');
+if(l) l.click();
 };
+c.addEventListener('click',(e)=>{
+// Tap to seek - CapCut formula: scrollOffset = currentTime - (screenWidth/2 / pps) but for seek
+const rect=c.getBoundingClientRect();
+const x=e.clientX - rect.left;
+const time=scrollOffset + x/pps;
+seekTo(time);
+});
 });
 
-// Restore clips
-mediaClips.forEach(clip=> {
+mediaClips.forEach(clip=>{
 const el=document.getElementById('track-'+clip.trackId);
-if(el) el.innerHTML='<div class="clip '+clip.type+' sel" style="left:'+(clip.start*pps/10)+'px;width:'+(clip.dur*pps/10)+'px">'+clip.name+'</div>';
+if(el){
+el.innerHTML='<div class="clip '+clip.type+' sel" style="left:'+((clip.start-scrollOffset)*pps)+'px;width:'+(clip.dur*pps)+'px">'+clip.name+'</div>';
+}
 });
-updateRuler();
+drawRuler();
+updatePlayhead();
+}
+
+function seekTo(time){
+currentTime=Math.max(0,time);
+if(realVideo.style.display!=='none' && realVideo.duration) realVideo.currentTime=currentTime;
+updatePlayhead();
+}
+
+function updatePlayhead(){
+const x=(currentTime - scrollOffset)*pps;
+playheadLine.style.left=x+'px';
+const mm=Math.floor(currentTime/60).toString().padStart(2,'0');
+const ss=Math.floor(currentTime%60).toString().padStart(2,'0');
+const dm=Math.floor(duration/60).toString().padStart(2,'0');
+const ds=Math.floor(duration%60).toString().padStart(2,'0');
+timeDisplay.textContent=mm+':'+ss+' / '+dm+':'+ds;
+// Auto scroll - Fixed center playhead - scrollOffset = currentTime - (screenWidth/2 / pps)
+const wrapW=rulerWrap.getBoundingClientRect().width;
+if(x>wrapW*0.7 || x<wrapW*0.3){
+scrollOffset=currentTime - (wrapW/2/pps);
+drawRuler();
+// Redraw clips
+tracks.querySelectorAll('.clip').forEach(clip=>{
+const start=parseFloat(clip.dataset.start||0);
+clip.style.left=((start-scrollOffset)*pps)+'px';
+});
+}
 }
 
 function addTextForId(id){
 const trackContent=document.getElementById('track-'+id);
 if(!trackContent) return;
-trackContent.innerHTML='<div class="clip text sel" style="left:10px;width:80px">T '+id+'</div>';
+const start=currentTime;
+trackContent.innerHTML='<div class="clip text sel" data-start="'+start+'" style="left:'+((start-scrollOffset)*pps)+'px;width:'+(3*pps)+'px">T '+id+'</div>';
 textOverlay.textContent='سورة الملك - '+id;
 textOverlay.style.display='block';
 textOverlay.style.fontFamily='Noto Nastaliq Urdu';
-showTextTools(id);
-trackContent.querySelector('.clip').onclick=()=>showTextTools(id);
-mediaClips.push({trackId:id,type:'text',name:'T '+id,start:0,dur:40});
+showTextTools(id,start);
+mediaClips.push({trackId:id,type:'text',name:'T '+id,start:start,dur:3});
 }
 
-function showTextTools(id){
-ctxRow1.innerHTML='<button class="ctx-btn" onclick="document.getElementById(\'fontModal\').classList.add(\'show\');renderFonts(\'Urdu\')"><span class="ico">Aa</span><span>Font</span></button><button class="ctx-btn"><span class="ico">T</span><span>Size</span></button><button class="ctx-btn"><span class="ico">☰</span><span>Format</span></button><button class="ctx-btn"><span class="ico">◐</span><span>Opacity</span></button>';
-ctxRow2.innerHTML='<button class="ctx-btn del" onclick="document.getElementById(\'track-'+id+'\').innerHTML=\'\';textOverlay.style.display=\'none\';hideCtx();mediaClips=mediaClips.filter(c=>c.trackId!==\''+id+'\')"><span class="ico">🗑</span><span>Delete</span></button><button class="ctx-btn"><span class="ico">⛶</span><span>Transform</span></button><button class="ctx-btn"><span class="ico">◫</span><span>Background</span></button>';
+function showTextTools(id,start){
+ctxRow1.innerHTML='<button class="ctx-btn" onclick="document.getElementById(\'fontModal\').classList.add(\'show\')"><span class="ico">Aa</span><span>Font</span></button><button class="ctx-btn"><span class="ico">T</span><span>Size</span></button><button class="ctx-btn"><span class="ico">☰</span><span>Format</span></button><button class="ctx-btn"><span class="ico">◐</span><span>Opacity</span></button>';
+ctxRow2.innerHTML='<button class="ctx-btn del" onclick="document.getElementById(\'track-'+id+'\').innerHTML=\'\';textOverlay.style.display=\'none\';hideCtx();mediaClips=mediaClips.filter(c=>!(c.trackId===\''+id+'\' && c.start==='+start+'))"><span class="ico">🗑</span><span>Delete</span></button><button class="ctx-btn"><span class="ico">⛶</span><span>Transform</span></button><button class="ctx-btn"><span class="ico">◫</span><span>BG</span></button>';
 ctxBar.classList.add('show');
 }
 
 function showFilterForId(id){
 const trackContent=document.getElementById('track-'+id);
 const color=TAB_CONFIG[currentTab]?.find(x=>x.id===id)?.color||'#5AC8FA';
-if(trackContent) trackContent.innerHTML='<div class="clip sel" style="left:10px;width:70px;background:'+color+'">'+id+'</div>';
+const start=currentTime;
+if(trackContent) trackContent.innerHTML='<div class="clip sel" data-start="'+start+'" style="left:'+((start-scrollOffset)*pps)+'px;width:'+(2*pps)+'px;background:'+color+'">'+id+'</div>';
 ctxRow1.innerHTML='<button class="ctx-btn"><span class="ico">◑</span><span>B&W</span></button><button class="ctx-btn"><span class="ico">◎</span><span>Vivid</span></button><button class="ctx-btn"><span class="ico">☀</span><span>Warm</span></button>';
 ctxRow2.innerHTML='<button class="ctx-btn"><span class="ico">⟡</span><span>Intensity</span></button><button class="ctx-btn del" onclick="document.getElementById(\'track-'+id+'\').innerHTML=\'\';hideCtx()"><span class="ico">🗑</span><span>Delete</span></button>';
 ctxBar.classList.add('show');
-mediaClips.push({trackId:id,type:'filter',name:id,start:0,dur:30});
+mediaClips.push({trackId:id,type:'filter',name:id,start:start,dur:2});
 }
 
 function showVideoToolsForId(id,file){
@@ -322,119 +370,77 @@ const isImage=file.type.startsWith('image/');
 const isVideo=file.type.startsWith('video/');
 const trackId=selectedTrackId||'media';
 const trackContent=document.getElementById('track-'+trackId);
+const start=currentTime + i*0.1;
 
 if(isImage){
-// Photo Support - Image to Video - Orange Clip
 realImage.src=url;
 realImage.style.display='block';
 realVideo.style.display='none';
 ph.style.display='none';
 if(trackContent){
-const clipName='🖼 '+file.name.substring(0,8);
-trackContent.innerHTML='<div class="clip photo sel" style="left:'+(10+i*90)+'px;width:80px">'+clipName+'</div>';
-trackContent.querySelector('.clip').onclick=()=>showVideoToolsForId(trackId,file);
+trackContent.innerHTML='<div class="clip photo sel" data-start="'+start+'" style="left:'+((start-scrollOffset)*pps)+'px;width:'+(3*pps)+'px">🖼 '+file.name.substring(0,6)+'</div>';
+trackContent.querySelector('.clip').onclick=()=>{selectedTrackId=trackId;showVideoToolsForId(trackId,file);};
 }
-mediaClips.push({trackId:trackId,type:'photo',name:'🖼 '+file.name.substring(0,8),start:i*10,dur:40});
+mediaClips.push({trackId:trackId,type:'photo',name:'🖼 '+file.name.substring(0,6),start:start,dur:3});
 showVideoToolsForId(trackId,file);
-console.log('Photo Selected:',file.name,'- Orange Clip - Photo to Video');
 }else if(isVideo){
-// Video Support - Blue Clip
 realVideo.src=url;
 realVideo.style.display='block';
 realImage.style.display='none';
 ph.style.display='none';
+realVideo.onloadedmetadata=()=>{
+duration=Math.max(duration,realVideo.duration);
+drawRuler();
+};
 realVideo.play();
 if(trackContent){
-const clipName='▶ '+file.name.substring(0,8);
-trackContent.innerHTML='<div class="clip sel" style="left:'+(10+i*90)+'px;width:100px">'+clipName+'</div>';
-trackContent.querySelector('.clip').onclick=()=>showVideoToolsForId(trackId,file);
+const dur=5;
+trackContent.innerHTML='<div class="clip sel" data-start="'+start+'" style="left:'+((start-scrollOffset)*pps)+'px;width:'+(dur*pps)+'px">▶ '+file.name.substring(0,6)+'</div>';
+trackContent.querySelector('.clip').onclick=()=>{selectedTrackId=trackId;showVideoToolsForId(trackId,file);};
 }
-mediaClips.push({trackId:trackId,type:'video',name:'▶ '+file.name.substring(0,8),start:i*10,dur:60});
-showVideoToolsForId(trackId,file);
-console.log('Video Selected:',file.name,'- Blue Clip');
-}else{
-// Audio - Orange
-if(trackContent){
-const clipName='♪ '+file.name.substring(0,8);
-trackContent.innerHTML='<div class="clip audio sel" style="left:'+(10+i*90)+'px;width:80px">'+clipName+'</div>';
-}
-mediaClips.push({trackId:trackId,type:'audio',name:'♪ '+file.name.substring(0,8),start:i*10,dur:50});
+mediaClips.push({trackId:trackId,type:'video',name:'▶ '+file.name.substring(0,6),start:start,dur:5});
 showVideoToolsForId(trackId,file);
 }
 });
 };
 
 document.getElementById('playBtn').onclick=()=>{
-if(realVideo.style.display==='none' && realImage.style.display==='none'){alert('Click + Media to Import Photo/Video First');return;}
+if(realVideo.style.display==='none' && realImage.style.display==='none'){alert('Click + Media First');return;}
 if(realVideo.style.display!=='none'){
 if(realVideo.paused){realVideo.play();document.getElementById('playBtn').textContent='⏸';}else{realVideo.pause();document.getElementById('playBtn').textContent='▶';}
-}else{
-alert('Photo Preview - Video from Photo - Use Export for Video');
 }
 };
 
 zoomSlider.oninput=(e)=>{
 pps=parseInt(e.target.value);
 zoomVal.textContent=pps+'px/s';
-rulerMarks.textContent='0 •• 00:05 •• 00:10 •• 00:15 •• 00:30 •• 01:00 •• '+currentTab.toUpperCase()+' - Media Stays - pps:'+pps+' - Zoom 5-300px/s';
-updateRuler();
+drawRuler();
+tracks.querySelectorAll('.clip').forEach(clip=>{
+const s=parseFloat(clip.dataset.start||0);
+clip.style.left=((s-scrollOffset)*pps)+'px';
+const d=clip.classList.contains('photo')||clip.classList.contains('text')?3:5;
+clip.style.width=(d*pps)+'px';
+});
 };
-
-function updateRuler(){
-const marks=[];
-for(let s=0;s<=60;s+=5){
-const x=s*pps/10;
-const label=s<10?'00:0'+s:'00:'+s;
-marks.push('<span class="r-mark '+(s%15===0?'major':'')+'" style="left:'+x+'px;position:absolute">'+label+'</span>');
-}
-rulerMarks.innerHTML=marks.join('')+' •• Pro Timeline - MM:SS - Zero Bug Fixed - Media Always Stays';
-}
 
 setInterval(()=>{
 if(realVideo.style.display!=='none' && !realVideo.paused){
 currentTime=realVideo.currentTime;
-playhead.style.left=(102+currentTime*pps/10)+'px';
+updatePlayhead();
 }
-},50);
+},40);
 
-const fonts={
-Basic:['Roboto','Poppins'],
-English:['Roboto','Poppins'],
-Urdu:['Noto Nastaliq Urdu','Jameel Noori','AlQalam','KFGQPC Bold','Al Majeed'],
-Arabic:['Amiri','Scheherazade New','Reem Kufi'],
-All:['Roboto','Noto Nastaliq','Amiri']
-};
-
-function renderFonts(cat){
-const grid=document.getElementById('fontGrid');
-const list=fonts[cat]||fonts['All'];
-grid.innerHTML=list.map(n=>'<div class="f-item" data-f="'+n+'"><span>🔖 '+n+'</span><span>✕</span></div>').join('');
-grid.querySelectorAll('.f-item').forEach(item=>{
-item.onclick=()=>{
-grid.querySelectorAll('.f-item').forEach(x=>x.classList.remove('sel'));
-item.classList.add('sel');
-const f=item.dataset.f;
-textOverlay.style.fontFamily=f;
-textOverlay.textContent='سورة الملك';
-textOverlay.style.display='block';
-const link=document.createElement('link');
-link.rel='stylesheet';
-link.href='https://fonts.googleapis.com/css2?family='+f.replace(/ /g,'+')+'&display=swap';
-document.head.appendChild(link);
-};
+rulerWrap.addEventListener('click',(e)=>{
+const rect=rulerWrap.getBoundingClientRect();
+const x=e.clientX - rect.left;
+const time=scrollOffset + x/pps;
+seekTo(time);
 });
-}
-renderFonts('Urdu');
-document.getElementById('fontTabs').onclick=(e)=>{
-const b=e.target.closest('.f-tab'); if(!b) return;
-document.querySelectorAll('.f-tab').forEach(x=>x.classList.remove('active'));
-b.classList.add('active');
-renderFonts(b.textContent.trim());
-};
 
+window.addEventListener('resize',()=>{initRuler();});
+initRuler();
 renderTracks('audio');
-updateRuler();
-console.log('v7.9 MEDIA STAYS + PHOTO + PRO TIMELINE - Fixed: Photo Select, Media Always, Pro Timeline Zoom Playhead MM:SS');
+console.log('v8.0 PRO FIX - Ruler Canvas MM:SS - No Overlap - Timeline Always Visible - Popup Below Timeline');
 </script>
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
