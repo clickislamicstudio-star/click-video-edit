@@ -1,94 +1,294 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en" dir="ltr">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Click v1.7 - Real Import + Real Player - 36 Files</title>
+<title>Click v1.8 - Phase 0 Decoupled - Android Ready</title>
 <meta name="theme-color" content="#FF3B30">
+<link rel="manifest" href="manifest.json">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{background:#0E0E0E;color:white;font-family:sans-serif;height:100vh;display:flex;flex-direction:column}
-header{background:#1A1A1A;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2A2A2A}header h1{color:#FF3B30;font-size:14px}.btn{background:#2A2A2A;color:white;border:none;padding:8px 14px;border-radius:20px;font-size:12px}.btn-primary{background:#FF3B30}
-#playerArea{height:45vh;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;padding:5px}#playerWrap{width:90%;max-width:340px;aspect-ratio:9/16;background:#111;border-radius:8px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}#realVideo{width:100%;height:100%;object-fit:contain;background:#000;display:none}#importBtn{background:#FF3B30;color:white;border:none;padding:14px 28px;border-radius:30px;font-size:14px;cursor:pointer;z-index:5}#importBtn:active{transform:scale(0.95)}#playOverlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:50px;display:none;z-index:4;cursor:pointer;text-shadow:0 2px 10px rgba(0,0,0,0.8)}
-#timelineArea{flex:1;background:#1E1E1E;border-top:2px solid #FF3B30;overflow:hidden;position:relative}#timelineArea canvas{display:block}
-#toolbar{background:#1A1A1A;padding:8px 0;border-top:1px solid #2A2A2A;overflow-x:auto;white-space:nowrap}.tool-btn{background:transparent;border:none;color:white;padding:8px 12px;min-width:60px;font-size:11px}.tool-icon{width:26px;height:26px;background:#2A2A2A;border-radius:7px;display:flex;align-items:center;justify-content:center;margin:0 auto 4px}
-#badge{position:fixed;top:50px;right:10px;background:#4CAF50;color:white;padding:5px 10px;border-radius:20px;font-size:10px;z-index:100;max-width:70vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#info{position:fixed;bottom:70px;left:10px;right:10px;background:rgba(0,0,0,0.9);color:#FF3B30;padding:8px 12px;border-radius:10px;font-size:10px;font-family:monospace;z-index:90;text-align:center}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0E0E0E;color:white;font-family:Inter,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:#1A1A1A;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2A2A2A;height:56px}
+header h1{color:#FF3B30;font-size:14px;font-weight:700;letter-spacing:0.5px}
+.btn{background:#2A2A2A;color:white;border:none;padding:8px 14px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s}
+.btn:active{transform:scale(0.95)}
+.btn-primary{background:#FF3B30;font-weight:600}
+#playerArea{height:48vh;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;padding:8px}
+#playerWrap{width:90%;max-width:340px;aspect-ratio:9/16;background:#111;border-radius:12px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+#realVideo{width:100%;height:100%;object-fit:contain;background:#000;display:none}
+#importBtn{background:#FF3B30;color:white;border:none;padding:14px 28px;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;z-index:5;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(255,59,48,0.3)}
+#importBtn:active{transform:scale(0.95)}
+#playOverlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:50px;display:none;z-index:4;cursor:pointer;text-shadow:0 2px 10px rgba(0,0,0,0.8)}
+#timelineArea{flex:1;background:#1E1E1E;border-top:2px solid #FF3B30;overflow:hidden;position:relative}
+#timelineArea canvas{display:block;width:100%;height:100%}
+#contextualToolbar{position:fixed;bottom:72px;left:0;right:0;height:64px;background:#1E1E1E;transform:translateX(100%);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1);z-index:100;display:flex;align-items:center;gap:4px;padding:0 12px;overflow-x:auto;white-space:nowrap;border-top:1px solid #FF3B30;scrollbar-width:none}
+#contextualToolbar::-webkit-scrollbar{display:none}
+#contextualToolbar.visible{transform:translateX(0)}
+#mainToolbar{position:fixed;bottom:0;left:0;right:0;height:72px;background:#121212;display:flex;align-items:center;justify-content:space-around;padding:0 8px;z-index:99;border-top:1px solid #222}
+.tool-item{display:flex;flex-direction:column;align-items:center;gap:4px;background:transparent;border:none;color:#A0A0A0;padding:8px 14px;border-radius:10px;cursor:pointer;min-width:56px;transition:all 0.2s}
+.tool-item.active{color:#FF3B30;background:rgba(255,59,48,0.12)}
+.tool-item svg{width:24px;height:24px}
+.tool-item span{font-size:10px;font-weight:500}
+#badge{position:fixed;top:60px;right:10px;background:#4CAF50;color:white;padding:6px 12px;border-radius:20px;font-size:11px;z-index:100;max-width:75vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+#info{position:fixed;bottom:80px;left:10px;right:10px;background:rgba(0,0,0,0.85);color:#FF3B30;padding:8px 12px;border-radius:10px;font-size:10px;font-family:monospace;z-index:90;text-align:center;border:1px solid rgba(255,59,48,0.2)}
 #status{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);color:#0F0;padding:4px 8px;border-radius:10px;font-size:9px;z-index:6}
+#textOverlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:32px;font-weight:bold;text-align:center;text-shadow:2px 2px 4px rgba(0,0,0,0.8);background:rgba(0,0,0,0.3);padding:8px 16px;border-radius:8px;pointer-events:none;display:none;z-index:20;max-width:80%;}
 </style>
 </head>
 <body>
-<header><h1>Click v1.7 - Real Import - 36 Files</h1><div><button class="btn" id="langBtn">EN</button><button class="btn btn-primary" id="exportBtn">Export</button></div></header>
+<header>
+  <h1>Click v1.8 - Decoupled - Android Ready</h1>
+  <div style="display:flex;gap:8px">
+    <button class="btn" id="langBtn">EN</button>
+    <button class="btn btn-primary" id="exportBtnTop">Export</button>
+  </div>
+</header>
+
 <div id="playerArea">
   <div id="playerWrap">
     <video id="realVideo" playsinline></video>
-    <button id="importBtn">📁 Import Video</button>
+    <button id="importBtn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 5h12a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2V5z" stroke="white" stroke-width="1.8"/><path d="M16 5l4 4v4" stroke="white" stroke-width="1.8"/></svg>
+      Import Video
+    </button>
     <div id="playOverlay">▶️</div>
     <div id="status">Ready - Import to Start</div>
   </div>
-  <div id="badge">Checking 36 Files...</div>
+  <div id="badge">Phase 0 - Decoupled - Checking...</div>
+  <div id="textOverlay"></div>
 </div>
-<div id="contextualToolbar" style="position:fixed;bottom:70px;left:0;right:0;height:56px;background:#1E1E1E;transform:translateX(100%);transition:transform 0.3s;z-index:100;display:flex;align-items:center;gap:8px;padding:0 12px;overflow-x:auto;"></div>
-<div id="mainToolbar" style="position:fixed;bottom:0;left:0;right:0;height:70px;background:#121212;display:flex;align-items:center;justify-content:space-around;padding:0 8px;z-index:99;border-top:1px solid #222;">
-  <button onclick="MediaImportTool.importToTimeline()" style="background:#2A2A2A;border:none;color:#FFF;padding:10px 16px;border-radius:8px;">📁 Media</button>
-  <button onclick="TextTool.addTextClip()" style="background:#2A2A2A;border:none;color:#FFF;padding:10px 16px;border-radius:8px;">📝 Text</button>
-  <button onclick="ZoomEngine.zoomOut()" style="background:#2A2A2A;border:none;color:#FFF;padding:10px 12px;border-radius:8px;">🔍-</button>
-  <button onclick="ZoomEngine.zoomIn()" style="background:#2A2A2A;border:none;color:#FFF;padding:10px 12px;border-radius:8px;">🔍+</button>
-  <button id="exportBtn" style="background:#FF3B30;border:none;color:#FFF;padding:10px 16px;border-radius:8px;">⬆️ Export</button>
-</div>
-<div id="textOverlay" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:32px;font-weight:bold;text-align:center;text-shadow:2px 2px 4px rgba(0,0,0,0.8);background:rgba(0,0,0,0.3);padding:8px 16px;border-radius:8px;pointer-events:none;display:none;z-index:20;max-width:80%;"></div>
-<div id="timelineArea"></div>
-<div id="info">Import Real Video -> Player Plays Real Video -> Timeline Shows Real Duration</div>
-<div id="toolbar"><div>
-<button class="tool-btn" onclick="ZoomEngine.zoomOut()"><div class="tool-icon">➖</div>ZoomOut</button><button class="tool-btn" onclick="ZoomEngine.zoomIn()"><div class="tool-icon">➕</div>ZoomIn</button><button class="tool-btn" id="btnTrim"><div class="tool-icon">✂️</div>Trim</button><button class="tool-btn"><div class="tool-icon">⚡</div>Speed</button><button class="tool-btn"><div class="tool-icon">T</div>Text</button><button class="tool-btn"><div class="tool-icon">🎨</div>Filter</button><button class="tool-btn"><div class="tool-icon">⭕</div>Mask</button><button class="tool-btn"><div class="tool-icon">🎵</div>Audio</button>
-</div></div>
 
-<script src="js/core/math.js?v=20"></script><script src="js/core/snap-engine.js?v=20"></script><script src="js/core/transform.js?v=20"></script><script src="js/core/keyframe.js?v=20"></script><script src="js/core/i18n.js?v=20"></script><script src="js/core/waveform.js?v=20"></script><script src="js/core/waveform-renderer.js?v=20"></script><script src="js/store.js?v=20"></script><script src="js/hardware.js?v=20"></script><script src="js/timeline/clip.js?v=20"></script><script src="js/timeline/timeline.js?v=20"></script><script src="js/timeline/gesture.js?v=20"></script><script src="js/timeline/selection.js?v=20"></script><script src="js/timeline/timeline-ui.js?v=20"></script><script src="js/timeline/zoom-engine.js?v=20"></script><script src="js/timeline/markers.js?v=20"></script><script src="js/player/player.js?v=20"></script><script src="js/player/renderer.js?v=20"></script><script src="js/tools/trim-split.js?v=20"></script><script src="js/tools/speed.js?v=20"></script><script src="js/tools/text.js?v=20"></script><script src="js/tools/filter.js?v=20"></script><script src="js/tools/masking.js?v=20"></script><script src="js/tools/chroma.js?v=20"></script><script src="js/tools/audio.js?v=20"></script><script src="js/tools/effects.js?v=20"></script><script src="js/tools/captions.js?v=20"></script><script src="js/tools/whisper-engine.js?v=20"></script><script src="js/tools/media-import.js?v=20"></script><script src="js/export/export.js?v=20"></script><script src="js/export/ffmpeg-engine.js?v=20"></script><script src="js/export/export-queue.js?v=20"></script><script src="js/app.js?v=20"></script>
+<div id="timelineArea"></div>
+
+<div id="contextualToolbar"></div>
+
+<div id="mainToolbar">
+  <!-- Will be rendered by IconSystem + Toolbar -->
+</div>
+
+<div id="info">Phase 0: EventBus + Single PPS + SnapEngine Real + Store Fix + IconSystem M3 + AndroidBridge Ready</div>
+
+<!-- PHASE 0 - DECOUPLED CORE - MUST LOAD FIRST -->
+<script src="js/core/event-bus.js?v=18"></script>
+<script src="js/core/math.js?v=18"></script>
+<script src="js/core/snap-engine.js?v=18"></script>
+<script src="js/ui/icons.js?v=18"></script>
+<script src="js/bridge/android-bridge.js?v=18"></script>
+
+<!-- Existing Core -->
+<script src="js/core/transform.js?v=18"></script>
+<script src="js/core/keyframe.js?v=18"></script>
+<script src="js/core/i18n.js?v=18"></script>
+<script src="js/core/waveform.js?v=18"></script>
+<script src="js/core/waveform-renderer.js?v=18"></script>
+<script src="js/store.js?v=18"></script>
+<script src="js/hardware.js?v=18"></script>
+
+<!-- Timeline Layer -->
+<script src="js/timeline/clip.js?v=18"></script>
+<script src="js/timeline/timeline.js?v=18"></script>
+<script src="js/timeline/gesture.js?v=18"></script>
+<script src="js/timeline/selection.js?v=18"></script>
+<script src="js/timeline/timeline-ui.js?v=18"></script>
+<script src="js/timeline/zoom-engine.js?v=18"></script>
+<script src="js/timeline/markers.js?v=18"></script>
+
+<!-- Player / Renderer -->
+<script src="js/player/player.js?v=18"></script>
+<script src="js/player/renderer.js?v=18"></script>
+
+<!-- Toolbar Layer -->
+<script src="js/tools/toolbar.js?v=18"></script>
+
+<!-- Tools -->
+<script src="js/tools/trim-split.js?v=18"></script>
+<script src="js/tools/speed.js?v=18"></script>
+<script src="js/tools/text.js?v=18"></script>
+<script src="js/tools/filter.js?v=18"></script>
+<script src="js/tools/masking.js?v=18"></script>
+<script src="js/tools/chroma.js?v=18"></script>
+<script src="js/tools/audio.js?v=18"></script>
+<script src="js/tools/effects.js?v=18"></script>
+<script src="js/tools/captions.js?v=18"></script>
+<script src="js/tools/whisper-engine.js?v=18"></script>
+<script src="js/tools/media-import.js?v=18"></script>
+
+<!-- Export Layer -->
+<script src="js/export/export.js?v=18"></script>
+<script src="js/export/ffmpeg-engine.js?v=18"></script>
+<script src="js/export/export-queue.js?v=18"></script>
+
+<!-- App -->
+<script src="js/app.js?v=18"></script>
 
 <script>
-// Real Import + Real Player wiring
-setTimeout(()=>{
-  if(window.TimelineUI) TimelineUI.init('timelineArea');
-  if(window.ZoomEngine) ZoomEngine.init();
-  if(window.Player) Player.init();
-}, 600);
+// Phase 0 Wiring + New Toolbar Rendering
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🚀 Click v1.8 Phase 0 Booting...');
 
-document.getElementById('importBtn')?.addEventListener('click', async ()=>{
-  const status = document.getElementById('status');
-  if(status) status.textContent = 'Opening Gallery...';
-  
-  if(window.MediaImportTool) {
-    const clips = await MediaImportTool.importToTimeline();
-    if(clips && clips.length>0) {
-      if(status) status.textContent = `Imported ${clips.length} files - Playing...`;
-      document.getElementById('importBtn').style.display = 'none';
-      document.getElementById('realVideo').style.display = 'block';
-    } else {
-      if(status) status.textContent = 'No file selected';
+  // Init TimelineUI with fixed PPS
+  setTimeout(()=>{
+    if(window.TimelineUI) {
+      // Fix: Use single source PPS
+      if(window.TimelineMath) TimelineUI.pixelsPerSecond = TimelineMath.getPps();
+      TimelineUI.init('timelineArea');
+      console.log('TimelineUI init with PPS:', TimelineMath.getPps());
     }
-  }
+    if(window.ZoomEngine) ZoomEngine.init();
+    if(window.Player) Player.init();
+    if(window.Store) Store.init();
+    
+    // Render Main Toolbar with IconSystem
+    renderMainToolbar();
+    
+    // Listen to Selection via EventBus
+    if(window.EventBus) {
+      EventBus.on(EventBus.EVENTS.CLIP_SELECTED, (clip) => {
+        console.log('EventBus: Clip Selected', clip);
+        showContextualToolbar(clip);
+      });
+      EventBus.on(EventBus.EVENTS.CLIP_DESELECTED, () => {
+        hideContextualToolbar();
+      });
+      EventBus.on(EventBus.EVENTS.TIMELINE_ZOOM, (data) => {
+        console.log('EventBus: Zoom', data.pps);
+        if(window.TimelineUI) {
+          TimelineUI.pixelsPerSecond = data.pps;
+          TimelineUI.render();
+        }
+      });
+    }
+  }, 600);
+
+  // Import Button
+  document.getElementById('importBtn')?.addEventListener('click', async ()=>{
+    const status = document.getElementById('status');
+    if(status) status.textContent = 'Opening Gallery...';
+    if(window.AndroidBridge) AndroidBridge.pickMedia();
+    else if(window.MediaImportTool) {
+      const clips = await MediaImportTool.importToTimeline();
+      if(clips && clips.length>0) {
+        if(status) status.textContent = `Imported ${clips.length} files`;
+        document.getElementById('importBtn').style.display = 'none';
+        document.getElementById('realVideo').style.display = 'block';
+        AndroidBridge.vibrate(50);
+      } else {
+        if(status) status.textContent = 'No file selected';
+      }
+    }
+  });
+
+  document.getElementById('realVideo')?.addEventListener('click', ()=>{ if(window.Player) Player.togglePlay(); });
+  document.getElementById('playOverlay')?.addEventListener('click', ()=>{ if(window.Player) Player.togglePlay(); });
+
+  // Badge Check
+  setTimeout(()=>{
+    const required = ['EventBus','TimelineMath','SnapEngine','IconSystem','AndroidBridge','TransformEngine','KeyframeEngine','I18n','WaveformEngine','WaveformRenderer','Store','HardwareDetector','Clip','Timeline','Gesture','Selection','TimelineUI','ZoomEngine','MarkersEngine','Player','Renderer','Toolbar','TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool','WhisperEngine','MediaImportTool','ExportEngine','FFmpegEngine','ExportQueue','App'];
+    const missing = required.filter(n=>typeof window[n]==='undefined');
+    const badge = document.getElementById('badge');
+    const info = document.getElementById('info');
+    if(missing.length===0){
+      badge.textContent='✅ v1.8 Decoupled - 38 Files - Android Ready!';
+      badge.style.background='#4CAF50';
+      info.textContent='Phase 0 Complete: EventBus + Snap Real + Icon M3 + Bridge Ready';
+      console.log('✅ Phase 0 READY - No missing');
+    } else {
+      badge.textContent='❌ Missing: '+missing.join(',');
+      badge.style.background='#FF3B30';
+      console.error('Missing', missing);
+    }
+  },1800);
 });
 
-document.getElementById('realVideo')?.addEventListener('click', ()=>{
-  if(window.Player) Player.togglePlay();
-});
+function renderMainToolbar() {
+  const bar = document.getElementById('mainToolbar');
+  if(!bar || !window.IconSystem) return;
+  
+  const tools = [
+    {id:'media', label:'Media', icon:'media', action:()=>{ if(window.AndroidBridge) AndroidBridge.pickMedia(); else MediaImportTool.importToTimeline(); }},
+    {id:'text', label:'Text', icon:'text', action:()=> TextTool.addTextClip()},
+    {id:'audio', label:'Audio', icon:'music', action:()=> console.log('Audio')},
+    {id:'zoomOut', label:'Zoom-', icon:'zoomOut', size:20, action:()=> ZoomEngine.zoomOut()},
+    {id:'zoomIn', label:'Zoom+', icon:'zoomIn', size:20, action:()=> ZoomEngine.zoomIn()},
+    {id:'export', label:'Export', icon:'export', active:true, action:()=> console.log('Export')},
+  ];
+  
+  bar.innerHTML = tools.map(t => `
+    <button class="tool-item ${t.active?'active':''}" id="btn-${t.id}">
+      ${IconSystem.render(t.icon, t.active, t.size||24)}
+      <span>${t.label}</span>
+    </button>
+  `).join('');
+  
+  tools.forEach(t => {
+    document.getElementById(`btn-${t.id}`)?.addEventListener('click', t.action);
+  });
+}
 
-document.getElementById('playOverlay')?.addEventListener('click', ()=>{
-  if(window.Player) Player.togglePlay();
-});
+function showContextualToolbar(clip) {
+  const bar = document.getElementById('contextualToolbar');
+  if(!bar || !window.IconSystem) return;
+  
+  const type = clip.type || clip.clipType || 'video';
+  const registry = IconSystem.getRegistry();
+  const tools = registry[type] || registry['video'];
+  
+  bar.innerHTML = tools.map(name => `
+    <button class="tool-item" data-tool="${name}">
+      ${IconSystem.render(name, false, 20)}
+      <span>${name}</span>
+    </button>
+  `).join('');
+  
+  bar.classList.add('visible');
+  
+  // Bind actions
+  bar.querySelectorAll('.tool-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tool = btn.dataset.tool;
+      console.log('Contextual Tool:', tool, 'for', clip);
+      if(window.AndroidBridge) AndroidBridge.vibrate(30);
+      // Dispatch via Store
+      if(window.Store) Store.dispatch({type:'TOOL_CLICK', payload:{tool, clipId: clip.id || clip.name}});
+      // Call actual tool if exists
+      if(tool==='trim' && window.TrimSplitTool) TrimSplitTool.showTrimUI();
+      if(tool==='delete' && window.Timeline) {
+        // Delete logic
+        const state = Store.getState();
+        console.log('Delete', state.selection.selectedClipId);
+      }
+    });
+  });
+  
+  if(window.EventBus) EventBus.emit(EventBus.EVENTS.TOOLBAR_CHANGE, {mode: type, tools});
+}
 
-setTimeout(()=>{
-  const all=['TimelineMath','SnapEngine','TransformEngine','KeyframeEngine','I18n','WaveformEngine','WaveformRenderer','Store','HardwareDetector','Clip','Timeline','Gesture','Selection','TimelineUI','ZoomEngine','MarkersEngine','Player','Renderer','TrimSplitTool','SpeedTool','TextTool','FilterTool','MaskingTool','ChromaTool','AudioTool','EffectsTool','CaptionsTool','WhisperEngine','MediaImportTool','ExportEngine','FFmpegEngine','ExportQueue','App'];
-  const missing=all.filter(n=>typeof window[n]==='undefined');
-  const badge=document.getElementById('badge');
-  if(missing.length===0){
-    badge.textContent='✅ 36 Files - Real Import Ready!';
-    badge.style.background='#4CAF50';
-    console.log('REAL IMPORT READY - No dummy clips');
-  } else {
-    badge.textContent='❌ Missing: '+missing.join(',');
-    badge.style.background='#FF3B30';
-  }
-},1500);
+function hideContextualToolbar() {
+  const bar = document.getElementById('contextualToolbar');
+  if(bar) bar.classList.remove('visible');
+}
 </script>
-</body>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
