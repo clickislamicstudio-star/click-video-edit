@@ -1,174 +1,201 @@
 /**
- * js/tools/toolbar.js - NEW - Professional Contextual Toolbar
- * Logic: Main Toolbar always bottom, Contextual slides from right to left on clip select
- * Like InShot/【entity-CapCut¦canonical_name=CapCut】: Select V1 → Trim/Split/Crop, Select Text → Font/Color/Animation
+ * js/tools/toolbar.js - Phase 2 - Contextual Toolbar Dynamic - Professional
+ * Video / Text / Audio / Image alag tools - InShot / CapCut Style
+ * Uses EventBus + IconSystem M3 + Store
  */
 const Toolbar = {
-  mainToolbar: null,
-  contextualToolbar: null,
+  currentMode: 'main',
   currentClip: null,
-  isContextualVisible: false,
-
-  // Professional SVG Icons - Lucide Style
-  icons: {
-    trim: [STRIPPED 186 bytes],
-    split: [STRIPPED 175 bytes],
-    crop: [STRIPPED 167 bytes],
-    speed: [STRIPPED 165 bytes],
-    volume: [STRIPPED 231 bytes],
-    filter: [STRIPPED 170 bytes],
-    delete: [STRIPPED 230 bytes],
-    font: [STRIPPED 221 bytes],
-    color: [STRIPPED 444 bytes],
-    animation: [STRIPPED 202 bytes]
+  
+  registry: {
+    main: [
+      {id:'media', label:'Media', icon:'media', action:'import'},
+      {id:'text', label:'Text', icon:'text', action:'addText'},
+      {id:'audio', label:'Audio', icon:'music', action:'importAudio'},
+      {id:'zoomOut', label:'Zoom-', icon:'zoomOut', action:'zoomOut'},
+      {id:'zoomIn', label:'Zoom+', icon:'zoomIn', action:'zoomIn'},
+      {id:'export', label:'Export', icon:'export', action:'export', active:true}
+    ],
+    video: [
+      {id:'trim', label:'Trim', icon:'trim', action:'trim'},
+      {id:'split', label:'Split', icon:'split', action:'split'},
+      {id:'crop', label:'Crop', icon:'crop', action:'crop'},
+      {id:'speed', label:'Speed', icon:'speed', action:'speed'},
+      {id:'volume', label:'Volume', icon:'volume', action:'volume'},
+      {id:'filter', label:'Filter', icon:'filter', action:'filter'},
+      {id:'animation', label:'Anim', icon:'animation', action:'anim'},
+      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true}
+    ],
+    text: [
+      {id:'font', label:'Font', icon:'font', action:'font'},
+      {id:'color', label:'Color', icon:'color', action:'color'},
+      {id:'animation', label:'Anim', icon:'animation', action:'anim'},
+      {id:'bg', label:'BG', icon:'bg', action:'bg'},
+      {id:'style', label:'Style', icon:'style', action:'style'},
+      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true}
+    ],
+    audio: [
+      {id:'volume', label:'Volume', icon:'volume', action:'volume'},
+      {id:'speed', label:'Speed', icon:'speed', action:'speed'},
+      {id:'fade', label:'Fade', icon:'fade', action:'fade'},
+      {id:'noise', label:'Noise', icon:'noise', action:'noise'},
+      {id:'music', label:'Music', icon:'music', action:'music'},
+      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true}
+    ],
+    image: [
+      {id:'crop', label:'Crop', icon:'crop', action:'crop'},
+      {id:'filter', label:'Filter', icon:'filter', action:'filter'},
+      {id:'animation', label:'Anim', icon:'animation', action:'anim'},
+      {id:'duration', label:'Time', icon:'timer', action:'duration'},
+      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true}
+    ]
   },
 
   init() {
-    this.mainToolbar = document.getElementById('mainToolbar');
-    this.contextualToolbar = document.getElementById('contextualToolbar');
+    console.log('Toolbar Phase2 - Contextual Dynamic Ready');
+    this.renderMain();
     
-    if(!this.contextualToolbar) {
-      // Create contextual toolbar container
-      this.contextualToolbar = document.createElement('div');
-      this.contextualToolbar.id = 'contextualToolbar';
-      this.contextualToolbar.style.cssText = `
-        position: fixed;
-        bottom: 70px;
-        left: 0;
-        right: 0;
-        height: 56px;
-        background: #1E1E1E;
-        border-top: 1px solid #333;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 0 12px;
-        overflow-x: auto;
-        transform: translateX(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 100;
-        scrollbar-width: none;
-      `;
-      document.body.appendChild(this.contextualToolbar);
+    if(window.EventBus) {
+      EventBus.on(EventBus.EVENTS.CLIP_SELECTED, (clip) => this.showForClip(clip));
+      EventBus.on(EventBus.EVENTS.CLIP_DESELECTED, () => this.renderMain());
     }
-
-    console.log('Toolbar v2.0 - Contextual System Ready');
   },
 
   showForClip(clip) {
     if(!clip) return;
-    
     this.currentClip = clip;
-    this.isContextualVisible = true;
+    this.currentMode = clip.type || 'video';
+    const tools = this.registry[this.currentMode] || this.registry.video;
+    this._renderContextual(tools, clip);
     
-    this.contextualToolbar.innerHTML = '';
-    
-    // Generate buttons based on track type
-    let tools = [];
-    
-    if(clip.track === 'V1' || clip.track === 'V2') {
-      tools = [
-        {id: 'trim', label: 'Trim', icon: this.icons.trim, action: ()=>window.TrimSplitTool?.showTrimUI()},
-        {id: 'split', label: 'Split', icon: this.icons.split, action: ()=>window.TrimSplitTool?.splitAtPlayhead()},
-        {id: 'crop', label: 'Crop', icon: this.icons.crop, action: ()=>window.FilterTool?.showCrop()},
-        {id: 'speed', label: 'Speed', icon: this.icons.speed, action: ()=>window.SpeedTool?.showSpeedUI()},
-        {id: 'volume', label: 'Volume', icon: this.icons.volume, action: ()=>window.AudioTool?.showVolume()},
-        {id: 'filter', label: 'Filter', icon: this.icons.filter, action: ()=>window.FilterTool?.showFilters()},
-        {id: 'delete', label: 'Delete', icon: this.icons.delete, action: ()=>this.deleteClip()}
-      ];
-    } else if(clip.track === 'Text') {
-      tools = [
-        {id: 'font', label: 'Font', icon: this.icons.font, action: ()=>window.TextTool?.showFontPicker()},
-        {id: 'color', label: 'Color', icon: this.icons.color, action: ()=>window.TextTool?.showColorPicker()},
-        {id: 'animation', label: 'Animation', icon: this.icons.animation, action: ()=>window.TextTool?.showAnimation()},
-        {id: 'delete', label: 'Delete', icon: this.icons.delete, action: ()=>this.deleteClip()}
-      ];
-    } else if(clip.track === 'A1' || clip.track === 'A2') {
-      tools = [
-        {id: 'volume', label: 'Volume', icon: this.icons.volume, action: ()=>window.AudioTool?.showVolume()},
-        {id: 'delete', label: 'Delete', icon: this.icons.delete, action: ()=>this.deleteClip()}
-      ];
+    if(window.Store) {
+      Store.dispatch({type:'TOOLBAR_CHANGE', payload:{mode:this.currentMode, tools:tools.map(t=>t.id)}});
     }
-
-    tools.forEach(tool => {
-      const btn = document.createElement('button');
-      btn.innerHTML = `${tool.icon}<span style="font-size:10px;margin-top:2px;">${tool.label}</span>`;
-      btn.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-width: 56px;
-        height: 48px;
-        background: #2A2A2A;
-        border: none;
-        border-radius: 8px;
-        color: #FFF;
-        cursor: pointer;
-        flex-shrink: 0;
-      `;
-      btn.onclick = tool.action;
-      this.contextualToolbar.appendChild(btn);
-    });
-
-    // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '✕';
-    closeBtn.style.cssText = `
-      margin-left: auto;
-      width: 36px;
-      height: 36px;
-      background: #333;
-      border: none;
-      border-radius: 50%;
-      color: #FFF;
-      cursor: pointer;
-      flex-shrink: 0;
-    `;
-    closeBtn.onclick = ()=>this.hide();
-    this.contextualToolbar.appendChild(closeBtn);
-
-    // Slide in
-    requestAnimationFrame(()=>{
-      this.contextualToolbar.style.transform = 'translateX(0)';
-    });
-
-    if(navigator.vibrate) navigator.vibrate(20);
+    if(window.EventBus) {
+      EventBus.emit(EventBus.EVENTS.TOOLBAR_CHANGE, {mode:this.currentMode, clipId:clip.id});
+    }
   },
 
   hide() {
-    if(!this.isContextualVisible) return;
-    
-    this.isContextualVisible = false;
-    this.contextualToolbar.style.transform = 'translateX(100%)';
     this.currentClip = null;
+    this.currentMode = 'main';
+    const bar = document.getElementById('contextualToolbar');
+    if(bar) bar.classList.remove('visible');
+    this.renderMain();
+  },
+
+  renderMain() {
+    this.currentMode = 'main';
+    const bar = document.getElementById('mainToolbar');
+    const cBar = document.getElementById('contextualToolbar');
+    if(cBar) cBar.classList.remove('visible');
+    if(!bar || !window.IconSystem) return;
     
-    if(window.TimelineUI) {
-      TimelineUI.selectedClip = null;
-      TimelineUI.render();
+    const tools = this.registry.main;
+    bar.innerHTML = tools.map(t => `
+      <button class="tool-item ${t.active?'active':''} ${t.danger?'danger':''}" id="main-${t.id}">
+        ${IconSystem.render(t.icon, !!t.active, 24)}
+        <span>${t.label}</span>
+      </button>
+    `).join('');
+    
+    tools.forEach(t => {
+      const el = document.getElementById(`main-${t.id}`);
+      if(el) el.addEventListener('click', () => this._handleAction(t, null));
+    });
+  },
+
+  _renderContextual(tools, clip) {
+    const bar = document.getElementById('contextualToolbar');
+    const mainBar = document.getElementById('mainToolbar');
+    if(!bar || !window.IconSystem) return;
+    
+    // Slide in animation
+    bar.innerHTML = `
+      <div style="display:flex;align-items:center;gap:2px;margin-right:8px;padding-right:8px;border-right:1px solid #333">
+        <span style="font-size:10px;color:#FF3B30;font-weight:700">${(clip.type||'video').toUpperCase()}</span>
+        <span style="font-size:9px;color:#8E8E93;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${clip.getDisplayName ? clip.getDisplayName() : clip.name}</span>
+      </div>
+      ${tools.map(t => `
+        <button class="tool-item ${t.danger?'danger':''}" id="ctx-${t.id}" data-action="${t.action}">
+          ${IconSystem.render(t.icon, false, 20)}
+          <span>${t.label}</span>
+        </button>
+      `).join('')}
+    `;
+    
+    bar.classList.add('visible');
+    
+    // Bind
+    tools.forEach(t => {
+      const el = document.getElementById(`ctx-${t.id}`);
+      if(el) el.addEventListener('click', () => this._handleAction(t, clip));
+    });
+    
+    // Hide main toolbar label to save space? Keep main visible as secondary
+  },
+
+  _handleAction(toolDef, clip) {
+    console.log('Toolbar Action:', toolDef.action, 'Clip:', clip?.id);
+    if(navigator.vibrate) navigator.vibrate(30);
+    if(window.AndroidBridge) AndroidBridge.vibrate(30);
+    
+    switch(toolDef.action) {
+      case 'import':
+        if(window.MediaImportTool) MediaImportTool.importToTimeline();
+        break;
+      case 'addText':
+        if(window.TextTool) TextTool.addTextClip();
+        break;
+      case 'zoomIn':
+        if(window.ZoomEngine) ZoomEngine.zoomIn();
+        break;
+      case 'zoomOut':
+        if(window.ZoomEngine) ZoomEngine.zoomOut();
+        break;
+      case 'trim':
+        if(window.TrimSplitTool) TrimSplitTool.showTrimUI(clip || this.currentClip);
+        else this._toast('Trim: Use white handles to drag');
+        break;
+      case 'split':
+        if(window.TrimSplitTool) TrimSplitTool.splitAtPlayhead(clip || this.currentClip);
+        else this._toast('Split at playhead');
+        break;
+      case 'delete':
+        if(window.Selection) Selection.deleteSelected();
+        else if(clip && window.TimelineUI) {
+          TimelineUI.clips = TimelineUI.clips.filter(c=>c.id!==clip.id);
+          TimelineUI.render();
+          this.hide();
+        }
+        break;
+      case 'speed':
+        if(window.SpeedTool) SpeedTool.showUI(clip);
+        else this._toast('Speed: 0.25x - 4x');
+        break;
+      case 'volume':
+        if(window.AudioTool) AudioTool.showVolumeUI(clip);
+        else this._toast('Volume control');
+        break;
+      case 'filter':
+        if(window.FilterTool) FilterTool.showUI(clip);
+        else this._toast('Filters: Coming Phase 3');
+        break;
+      case 'export':
+        if(window.ExportEngine) ExportEngine.showExportDialog();
+        else this._toast('Export');
+        break;
+      default:
+        this._toast(toolDef.label + ' - Coming Soon');
     }
   },
 
-  deleteClip() {
-    if(!this.currentClip) return;
-    
-    if(window.TimelineUI) {
-      TimelineUI.clips = TimelineUI.clips.filter(c => c.id !== this.currentClip.id);
-      TimelineUI.render();
-    }
-    
-    this.hide();
-    
-    if(window.Player) {
-      const v = document.getElementById('realVideo');
-      if(v) v.pause();
-    }
+  _toast(msg) {
+    const info=document.getElementById('info');
+    if(info){ info.textContent=msg; info.style.color='#FFF'; setTimeout(()=>{ info.textContent='Phase 2: Contextual Toolbar Ready'; info.style.color='#FF3B30'; },2000); }
+    console.log(msg);
   }
 };
-window.Toolbar = Toolbar;
 
-if(document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', ()=>Toolbar.init());
-} else {
-  setTimeout(()=>Toolbar.init(), 300);
-}
+window.Toolbar = Toolbar;
+document.addEventListener('DOMContentLoaded', ()=> { setTimeout(()=>Toolbar.init(), 800); });
