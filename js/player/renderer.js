@@ -1,6 +1,6 @@
 
 /**
- * Folder: js/player/ File: renderer.js v3.9 - PIP No Black Fix + Audio Unmute + Static Video + Blue Line Moves
+ * Folder: js/player/ File: renderer.js v3.9 FINAL - PIP No Black + Audio Unmute + No Emoji - Master Prompt
  */
 const Renderer = {
   videoEl:null, pipEl:null, textEl:null, emptyHint:null, currentClip:null,
@@ -9,10 +9,10 @@ const Renderer = {
     this.pipEl=document.getElementById('pipVideo');
     this.textEl=document.getElementById('textOverlay');
     this.emptyHint=document.getElementById('emptyHint');
-    console.log('Renderer v3.9 - PIP No Black + Audio Fix - Video Static Blue Moves');
+    console.log('Renderer v3.9 FINAL - PIP No Black + Audio Unmute - No Emoji');
     if(this.videoEl){
       this.videoEl.style.display='block';
-      this.videoEl.muted=false; // FIX: Audio - was true, now false for audio
+      this.videoEl.muted=false;
       this.videoEl.loop=false;
       this.videoEl.autoplay=false;
       this.videoEl.playsInline=true;
@@ -41,22 +41,17 @@ const Renderer = {
       EventBus.on(EventBus.EVENTS.PLAYHEAD, (d)=>{
         if(!window.TimelineUI) return;
         const time=d.time;
-        // Video static, blue moves - video seeks but stays in place
         const mainVideo = TimelineUI.clips.find(c=> (c.type==='video'||c.type==='image') && c.track!==4 && time>=c.startTime && time<=c.startTime+c.duration);
         if(mainVideo && this.videoEl && mainVideo.type==='video'){
           if(this.videoEl.src!==mainVideo.src){ this.videoEl.src=mainVideo.src; this.videoEl.load(); }
           const rel=time-mainVideo.startTime;
           if(Math.abs(this.videoEl.currentTime-rel)>0.3) this.videoEl.currentTime=rel;
         }
-        // PIP overlay
         const pipClip = TimelineUI.clips.find(c=> (c.type==='pip'||c.type==='overlay'||c.track===4) && time>=c.startTime && time<=c.startTime+c.duration);
         if(pipClip && this.pipEl){
           if(pipClip.type==='video' || pipClip.type==='pip'){
             if(this.pipEl.src!==pipClip.src){ this.pipEl.src=pipClip.src; this.pipEl.load(); }
             this.pipEl.style.display='block';
-          } else if(pipClip.type==='image'){
-            // For image PIP, show as background image in pipEl placeholder - use main videoEl as fallback?
-            this.pipEl.style.display='none';
           }
         } else if(this.pipEl){
           this.pipEl.style.display='none';
@@ -69,20 +64,18 @@ const Renderer = {
     this.currentClip=clip;
     if(this.emptyHint) this.emptyHint.style.display='none';
     const st=document.getElementById('status');
-    if(st) st.textContent = 'Selected: '+clip.name+' ('+clip.type+') - '+ (clip.type==='pip'?'PIP Overlay - No Black':'Paused');
+    if(st) st.textContent = 'Selected: '+clip.name+' ('+clip.type+') - '+(clip.type==='pip'?'PIP Overlay - No Black':'Paused - Audio Ready');
     
     if(clip.type==='video' || clip.type==='image'){
       this.showVideo(clip);
       if(this.pipEl) this.pipEl.style.display='none';
     } else if(clip.type==='pip' || clip.type==='overlay'){
-      // FIX Black Screen: Show main video as background + PIP as overlay
       const mainVideo = window.TimelineUI ? TimelineUI.clips.find(c=> (c.type==='video'||c.type==='image') && c.track!==4) : null;
       if(mainVideo){
         this.showVideo(mainVideo, true);
-        if(st) st.textContent='Main: '+mainVideo.name+' + PIP: '+clip.name;
+        if(st) st.textContent='Main: '+mainVideo.name+' + PIP: '+clip.name+' - No Black';
       }
-      if(clip.type==='image' || clip.src && clip.src.includes('image')){
-        // Image PIP - show in pipVideo as image? Use videoEl for now with overlay
+      if(clip.type==='image' || (clip.src && clip.src.includes('image'))){
         this.showPIPImage(clip);
       } else {
         this.showPIPVideo(clip);
@@ -97,6 +90,7 @@ const Renderer = {
       const videoClip = window.TimelineUI ? TimelineUI.clips.find(c=> c.type==='video'||c.type==='image') : null;
       if(videoClip) this.showVideo(videoClip, true);
       else if(this.videoEl) this.videoEl.style.display='none';
+      if(window.AudioEngine) AudioEngine.loadClip(clip);
     }
   },
   showVideo(clip, isBackground=false){
@@ -117,10 +111,6 @@ const Renderer = {
         if(t.flipX) tr+=' scaleX(-1)';
         this.videoEl.style.transform = tr;
       }
-    } else if(clip.type==='image' && clip.src){
-      // Image as video - show as image
-      this.videoEl.style.display='block';
-      this.videoEl.poster=clip.src;
     }
   },
   showPIPVideo(clip){
@@ -136,7 +126,6 @@ const Renderer = {
     }
   },
   showPIPImage(clip){
-    // For image overlay - create img overlay
     let img=document.getElementById('pipImageOverlay');
     if(!img){
       img=document.createElement('img');
@@ -146,7 +135,6 @@ const Renderer = {
     }
     img.src=clip.src;
     img.style.display='block';
-    setTimeout(()=>{ img.style.display='none'; }, 5000);
   },
   showText(clip){
     if(!this.textEl) this.textEl=document.getElementById('textOverlay');
@@ -157,19 +145,6 @@ const Renderer = {
     this.textEl.style.color = clip.fontColor||'#FFF';
     this.textEl.style.fontFamily = clip.fontFamily||'Inter';
     this.textEl.style.fontWeight='700';
-    if(clip.fontColor && clip.fontColor.includes('gradient')){
-      this.textEl.style.background = clip.fontColor;
-      this.textEl.style.webkitBackgroundClip='text';
-      this.textEl.style.backgroundClip='text';
-      this.textEl.style.webkitTextFillColor='transparent';
-      this.textEl.style.color='transparent';
-    } else {
-      this.textEl.style.background='transparent';
-      this.textEl.style.webkitBackgroundClip='initial';
-      this.textEl.style.backgroundClip='initial';
-      this.textEl.style.webkitTextFillColor='initial';
-      this.textEl.style.color=clip.fontColor||'#FFF';
-    }
     if(clip.transform){
       const t=clip.transform;
       this.textEl.style.transform=`translate(-50%,-50%) translate(${t.x*3}px, ${t.y*3}px) rotate(${t.rotation||0}deg) scale(${t.scale||1})`;
@@ -178,8 +153,6 @@ const Renderer = {
     }
   },
   _hideTextOnly(){ if(this.textEl) this.textEl.style.display='none'; const img=document.getElementById('pipImageOverlay'); if(img) img.style.display='none'; },
-  _hide(){ this._hideTextOnly(); if(this.videoEl) this.videoEl.style.display='none'; if(this.pipEl) this.pipEl.style.display='none'; },
-  _forceShow(clip){ this.showClip(clip); }
 };
 window.Renderer=Renderer;
 setTimeout(()=>Renderer.init(), 200);
