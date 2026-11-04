@@ -1,14 +1,14 @@
 
 /**
- * Folder: js/tools/ File: toolbar.js v3.9 - Edit First + Transform First + No Emoji + Order Fix
+ * Folder: js/tools/ File: toolbar.js v3.9 FINAL - Edit First + Transform First + No Emoji + Master Prompt
+ * Icon System: SVG Only - Material 3 Rounded - 20px Timeline Tools - No Emoji
  */
 const Toolbar = {
-  init(){ this.bar=document.getElementById('contextualToolbar'); console.log('Toolbar v3.9 - Edit First, Transform First, No Emoji'); },
+  init(){ this.bar=document.getElementById('contextualToolbar'); console.log('Toolbar v3.9 FINAL - Edit First, No Emoji, Master Prompt'); },
   showForClip(clip){
     if(!this.bar) this.bar=document.getElementById('contextualToolbar');
     if(!this.bar || !clip) return;
     
-    // Order as per user: Edit First, then Transform, then others, Delete after, Close last
     let tools=[];
     if(clip.type==='video' || clip.type==='image'){
       tools=[
@@ -57,7 +57,7 @@ const Toolbar = {
         {id:'untilEnd', label:'Until the End', icon:'trim'},
         {id:'mute', label:'Mute', icon:'volume'},
         {id:'volume', label:'Volume', icon:'volume'},
-        {id:'noise', label:'Noise Reduction', icon:'filter'},
+        {id:'noise', label:'Noise', icon:'filter'},
         {id:'fade', label:'Fade', icon:'filter'},
         {id:'delete', label:'Delete', icon:'delete', danger:true},
         {id:'close', label:'Close', icon:'close'}
@@ -73,7 +73,7 @@ const Toolbar = {
     });
   },
   handleTool(id, clip){
-    console.log('Toolbar v3.9', id, clip.type);
+    console.log('Toolbar v3.9 FINAL', id, clip.type);
     if(id==='edit' && window.EditPanel) EditPanel.show(clip);
     else if(id==='transform' && window.TransformTool) TransformTool.showTransformPanel(clip);
     else if(id==='split' && window.TrimSplitTool) TrimSplitTool.splitAtPlayhead(clip);
