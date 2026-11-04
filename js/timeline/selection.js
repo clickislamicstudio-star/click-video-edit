@@ -1,12 +1,12 @@
 
 /**
- * Folder: js/timeline/ File: selection.js v3.9 - Text Selection Fix
+ * Folder: js/timeline/ File: selection.js v3.9 FINAL - Text Selection Fix - No Emoji
  */
 const Selection={
   selectedClip:null,
   selectClip(clip){
     this.selectedClip=clip;
-    console.log('Selection v3.9 - Selected:', clip.type, clip.name, 'Track:', clip.track);
+    console.log('Selection v3.9 FINAL - Selected:', clip.type, clip.name, 'Track:', clip.track);
     if(window.Store) Store.dispatch({type:'SELECT_CLIP', payload:{id:clip.id, track:clip.track, clipType:clip.type, name:clip.name, clip:clip}});
     if(window.TimelineUI) TimelineUI.render();
     if(window.Toolbar) Toolbar.showForClip(clip);
