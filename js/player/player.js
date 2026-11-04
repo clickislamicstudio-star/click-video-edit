@@ -1,248 +1,95 @@
 /**
- * js/player/player.js - v6 FINAL - Professional Sync + Text Overlay + Trim
- * Logic: scrollOffset = currentTime - (screenWidth/2 / pps) - Playhead Fixed Center
- * No clamp - Allows negative like professional editors
- * NEW: Text Overlay + Trim SourceOffset Support
+ * js/player/player.js - Phase 3 - Real Player with Filters, Text, Speed
  */
 const Player = {
-  videoElement: null,
-  currentTime: 0,
+  video: null,
   isPlaying: false,
-  animationId: null,
-  duration: 0,
+  currentClip: null,
+  rafId: null,
 
   init() {
-    this.videoElement = document.getElementById('realVideo');
-    if(!this.videoElement) {
-      console.log('realVideo not found, retry in 500ms');
-      setTimeout(()=>this.init(), 500);
-      return;
-    }
-
-    console.log('Player v6 FINAL - Text + Trim + Sync Ready');
-
-    // Video events
-    this.videoElement.addEventListener('loadedmetadata', ()=>{
-      this.duration = this.videoElement.duration || 0;
-      console.log('Video metadata - Duration:', this.duration);
-      const status = document.getElementById('status');
-      if(status) {
-        status.textContent = `Ready: ${this.duration.toFixed(1)}s - Tap Play - Tap Timeline to Seek`;
-        status.style.color = '#4CAF50';
+    this.video = document.getElementById('realVideo');
+    if(!this.video) return;
+    
+    this.video.addEventListener('timeupdate', ()=> {
+      const t = this.video.currentTime + (this.currentClip?.startTime||0) - (this.currentClip?.sourceOffset||0);
+      if(window.TimelineUI) {
+        TimelineUI.scrollOffset = t - (TimelineUI.width/2 / TimelineUI.pixelsPerSecond);
+        TimelineUI.render();
       }
     });
-
-    // Sync timeline on timeupdate
-    this.videoElement.addEventListener('timeupdate', ()=>{
-      this.currentTime = this.videoElement.currentTime;
-      this.syncTimeline();
-    });
-
-    this.videoElement.addEventListener('play', ()=>{
-      this.isPlaying = true;
-      this.startSyncLoop();
-      const badge = document.getElementById('badge');
-      if(badge) badge.textContent = '▶️ Playing';
-    });
-
-    this.videoElement.addEventListener('pause', ()=>{
-      this.isPlaying = false;
-      this.stopSyncLoop();
-      const badge = document.getElementById('badge');
-      if(badge) badge.textContent = '⏸️ Paused - Tap to Play';
-    });
-
-    this.videoElement.addEventListener('ended', ()=>{
-      this.isPlaying = false;
-      this.stopSyncLoop();
-      const badge = document.getElementById('badge');
-      if(badge) badge.textContent = '✅ Ended - Tap to Replay';
-    });
-
-    // Click video to play/pause
-    this.videoElement.addEventListener('click', ()=>{
-      this.togglePlay();
-    });
-  },
-
-  syncTimeline() {
-    if(!window.TimelineUI || !TimelineUI.canvas) return;
-
-    const width = TimelineUI.canvas.width / 2;
-    const pps = TimelineUI.pixelsPerSecond || 80;
-    const centerX = width / 2;
-
-    // PROFESSIONAL FORMULA - CapCut Style
-    // Playhead fixed center, timeline scrolls left as video plays
-    // scrollOffset = currentTime - (centerX / pps)
-    TimelineUI.scrollOffset = this.currentTime - (centerX / pps);
-
-    // Update MarkersEngine playhead time
-    if(window.MarkersEngine) {
-      MarkersEngine.playheadTime = this.currentTime;
-    }
-
-    // Render timeline - This makes playhead move with video
-    TimelineUI.render();
     
-    // NEW v6: Check text overlay visibility - Real Text on Player
-    if(window.TextTool) {
-      TextTool.checkTextVisibility(this.currentTime);
-    }
-
-    // NEW v6: Handle Trim - If clip has sourceOffset, adjust video time
-    this.handleTrimPlayback();
-  },
-
-  // NEW v6: Trim Playback Logic - Real Trim
-  handleTrimPlayback() {
-    const activeClip = window.TimelineUI?.clips.find(c => 
-      c.track === 'V1' && 
-      this.currentTime >= c.startTime && 
-      this.currentTime <= c.startTime + c.duration
-    );
-
-    if(activeClip && activeClip.sourceOffset !== undefined) {
-      const clipLocalTime = this.currentTime - activeClip.startTime;
-      const videoTime = activeClip.sourceOffset + clipLocalTime;
-      
-      // If video time differs too much, sync it (for trim)
-      if(Math.abs(this.videoElement.currentTime - videoTime) > 0.3) {
-        // Only sync if not actively playing (to avoid jitter)
-        // For now, we handle trim via seek, not continuous sync
-      }
-    }
-  },
-
-  startSyncLoop() {
-    this.stopSyncLoop();
+    this.video.addEventListener('play', ()=>{ this.isPlaying=true; this._loop(); });
+    this.video.addEventListener('pause', ()=>{ this.isPlaying=false; if(this.rafId) cancelAnimationFrame(this.rafId); });
     
-    const tick = () => {
-      if(!this.isPlaying) return;
-      
-      if(this.videoElement) {
-        this.currentTime = this.videoElement.currentTime;
-        this.syncTimeline();
-      }
-      
-      this.animationId = requestAnimationFrame(tick);
-    };
-    
-    this.animationId = requestAnimationFrame(tick);
-  },
-
-  stopSyncLoop() {
-    if(this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
+    console.log('Player Phase3 - Real Player Ready');
   },
 
   loadClip(clip) {
-    console.log('Player.loadClip:', clip?.name, clip?.duration, 'Offset:', clip?.sourceOffset);
-    if(clip && clip.url && this.videoElement) {
-      if(this.videoElement.src !== clip.url) {
-        this.videoElement.src = clip.url;
-        this.videoElement.load();
-      }
-      
-      // If clip has trim offset, seek to it
-      if(clip.sourceOffset !== undefined) {
-        setTimeout(()=>{
-          this.videoElement.currentTime = clip.sourceOffset;
-          this.currentTime = clip.sourceOffset;
-        }, 100);
-      }
+    if(!clip || !this.video) return;
+    if(clip.type!=='video' && clip.type!=='audio') {
+      if(clip.type==='text' && window.TextTool) TextTool.renderPreview(clip);
+      return;
     }
-  },
-
-  play() {
-    const v = document.getElementById('realVideo') || this.videoElement;
-    if(!v) return;
     
-    v.play().then(()=>{
-      console.log('Playing');
-    }).catch(err=>{
-      console.log('Play blocked - needs user gesture:', err.message);
-      const status = document.getElementById('status');
-      if(status) {
-        status.textContent = 'Tap Video to Play (Browser blocked autoplay)';
-        status.style.color = '#FF9800';
-      }
-    });
-  },
-
-  pause() {
-    const v = document.getElementById('realVideo') || this.videoElement;
-    if(v) v.pause();
+    this.currentClip = clip;
+    if(clip.src && this.video.src !== clip.src) {
+      this.video.src = clip.src;
+      this.video.load();
+    }
+    
+    // Apply filters
+    this.video.style.filter = clip.filterCss || 'none';
+    
+    // Apply volume
+    this.video.volume = clip.volume ?? 1;
+    
+    // Seek to sourceOffset
+    const seek = clip.sourceOffset || 0;
+    this.video.currentTime = seek;
+    
+    document.getElementById('importBtn').style.display='none';
+    this.video.style.display='block';
   },
 
   togglePlay() {
-    const v = document.getElementById('realVideo') || this.videoElement;
-    if(!v) return;
+    if(!this.video) return;
+    if(this.isPlaying) this.video.pause();
+    else this.video.play();
     
-    if(v.paused) {
-      this.play();
-    } else {
-      this.pause();
-    }
+    const overlay=document.getElementById('playOverlay');
+    if(overlay) overlay.style.display = this.isPlaying ? 'none' : 'block';
   },
 
-  seekTo(time) {
-    const v = document.getElementById('realVideo') || this.videoElement;
-    if(!v) return;
-    
-    if(time < 0) time = 0;
-    if(this.duration > 0 && time > this.duration) time = this.duration;
-    
-    console.log('Seek to:', time.toFixed(2) + 's');
-    
-    // Check if there's a clip with sourceOffset at this time
-    const activeClip = window.TimelineUI?.clips.find(c => 
-      c.track === 'V1' && 
-      time >= c.startTime && 
-      time <= c.startTime + c.duration
-    );
-
-    let videoSeekTime = time;
-    if(activeClip && activeClip.sourceOffset !== undefined) {
-      const clipLocalTime = time - activeClip.startTime;
-      videoSeekTime = activeClip.sourceOffset + clipLocalTime;
-      console.log('Trim seek - Clip offset:', activeClip.sourceOffset, 'Local:', clipLocalTime, 'Video:', videoSeekTime);
-    }
-    
-    v.currentTime = videoSeekTime;
-    this.currentTime = time;
-    
-    this.syncTimeline();
-    
-    const status = document.getElementById('status');
-    if(status) {
-      status.textContent = `Seek: ${time.toFixed(1)}s / ${(this.duration||0).toFixed(1)}s`;
-      status.style.color = '#2196F3';
-      setTimeout(()=>{
-        if(this.isPlaying) {
-          status.textContent = `Playing: ${time.toFixed(1)}s`;
-          status.style.color = '#4CAF50';
+  _loop() {
+    if(!this.isPlaying) return;
+    this.rafId = requestAnimationFrame(()=>this._loop());
+    // Update timeline scroll
+    if(this.video && this.currentClip) {
+      const clipTime = this.video.currentTime;
+      if(clipTime >= (this.currentClip.duration + this.currentClip.sourceOffset)) {
+        // Clip ended
+        if(this.currentClip) {
+          // Try next clip
+          const nextClip = window.TimelineUI?.clips.find(c=>c.startTime > this.currentClip.startTime);
+          if(nextClip && nextClip.type==='video') {
+            this.loadClip(nextClip);
+            this.video.play();
+          } else {
+            this.video.pause();
+          }
         }
-      }, 1000);
+      }
     }
   },
 
-  getCurrentTime() {
-    return this.currentTime;
+  setVolume(v) {
+    if(this.video) this.video.volume = v;
   },
 
-  getDuration() {
-    return this.duration;
+  updateDuration() {
+    console.log('Player duration updated');
   }
 };
-
-// Auto init when loaded
-if(document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', ()=>Player.init());
-} else {
-  setTimeout(()=>Player.init(), 100);
-}
-
 window.Player = Player;
+document.addEventListener('DOMContentLoaded', ()=> setTimeout(()=>Player.init(), 600));
