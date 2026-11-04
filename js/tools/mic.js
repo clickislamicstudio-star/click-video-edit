@@ -1,22 +1,19 @@
 
 /**
- * Folder: js/tools/ File: mic.js v3.9 - Permission Once + Real Recording -> Audio Layer
+ * Folder: js/tools/ File: mic.js v3.9 FINAL - Permission Once - No Emoji - Master Prompt
  */
 const MicTool={
   isRecording:false,
   async startRecording(){
     const hasPerm = await PermissionManager.requestMicPermission();
     if(!hasPerm){
-      alert('Microphone permission denied - Please allow in browser settings. Only once needed.');
+      alert('Microphone permission denied - Allow once in browser settings');
       return;
     }
     try{
       const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-      // For now simulate - real recording Phase 4
-      alert('Mic permission granted (once) - Recording will drop to Audio layer\nAudio: 48px waveform like your screenshot');
       stream.getTracks().forEach(t=>t.stop());
-      
-      const clip = new (window.Clip||Clip)({
+      const clip = new Clip({
         id:'audio_'+Date.now(),
         name:'Voiceover '+new Date().toLocaleTimeString().slice(0,8),
         type:'audio',
