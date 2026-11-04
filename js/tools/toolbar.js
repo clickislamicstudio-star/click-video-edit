@@ -1,6 +1,6 @@
 
 /**
- * Toolbar v3.5 - Added Transform button
+ * Toolbar v3.6 - Transform FIRST in all layers
  */
 const Toolbar = {
   currentMode:'main', currentClip:null,
@@ -14,24 +14,32 @@ const Toolbar = {
       {id:'export', label:'Export', icon:'export', action:'export', active:true}
     ],
     video:[
+      {id:'transform', label:'Transform', icon:'crop', action:'transform'},
       {id:'trim', label:'Trim', icon:'trim', action:'trim'},
       {id:'split', label:'Split', icon:'split', action:'split'},
       {id:'crop', label:'Crop', icon:'crop', action:'crop'},
       {id:'speed', label:'Speed', icon:'speed', action:'speed'},
       {id:'volume', label:'Volume', icon:'volume', action:'volume'},
       {id:'filter', label:'Filter', icon:'filter', action:'filter'},
-      {id:'transform', label:'Transform', icon:'crop', action:'transform'},
       {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true},
       {id:'close', label:'Close', icon:'close', action:'closeBar'}
     ],
     text:[
+      {id:'transform', label:'Transform', icon:'crop', action:'transform'},
       {id:'edit', label:'Edit', icon:'text', action:'editText'},
       {id:'font', label:'Font', icon:'font', action:'font'},
       {id:'color', label:'Color', icon:'color', action:'color'},
       {id:'template', label:'Template', icon:'style', action:'template'},
       {id:'anim', label:'Anim', icon:'animation', action:'anim'},
       {id:'bg', label:'BG', icon:'bg', action:'bg'},
+      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true},
+      {id:'close', label:'Close', icon:'close', action:'closeBar'}
+    ],
+    image:[
       {id:'transform', label:'Transform', icon:'crop', action:'transform'},
+      {id:'crop', label:'Crop', icon:'crop', action:'crop'},
+      {id:'filter', label:'Filter', icon:'filter', action:'filter'},
+      {id:'anim', label:'Anim', icon:'animation', action:'anim'},
       {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true},
       {id:'close', label:'Close', icon:'close', action:'closeBar'}
     ],
@@ -43,14 +51,23 @@ const Toolbar = {
     ]
   },
   init(){ this.renderMain(); if(window.EventBus){ EventBus.on(EventBus.EVENTS.CLIP_SELECTED, (clip)=>this.showForClip(clip)); EventBus.on(EventBus.EVENTS.CLIP_DESELECTED, ()=>this.renderMain()); } },
-  showForClip(clip){ if(!clip) return; this.currentClip=clip; this.currentMode=clip.type||'video'; const tools=this.registry[this.currentMode]||this.registry.video; this._renderContextual(tools, clip); if(clip.type==='text' && window.TransformTool){ setTimeout(()=>TransformTool.showHandles(clip), 200); } },
+  showForClip(clip){
+    if(!clip) return;
+    this.currentClip=clip;
+    let type=clip.type||'video';
+    if(type==='image' || type==='overlay' || type==='pip') type='image';
+    this.currentMode=type;
+    const tools=this.registry[type]||this.registry.video;
+    this._renderContextual(tools, clip);
+    if(clip.type==='text' && window.TransformTool){ setTimeout(()=>TransformTool.showHandles(clip), 150); }
+  },
   hide(){ this.currentClip=null; this.currentMode='main'; const bar=document.getElementById('contextualToolbar'); if(bar) bar.classList.remove('visible'); this.renderMain(); if(window.TransformTool) TransformTool._removeBox(); },
   renderMain(){
     this.currentMode='main'; const bar=document.getElementById('mainToolbar'); const cBar=document.getElementById('contextualToolbar'); if(cBar) cBar.classList.remove('visible'); if(!bar||!window.IconSystem) return; const tools=this.registry.main; bar.innerHTML=tools.map(t=>`<button class="tool-item ${t.active?'active':''}" id="main-${t.id}">${IconSystem.render(t.icon, !!t.active, 24)}<span>${t.label}</span></button>`).join(''); tools.forEach(t=>{ const el=document.getElementById(`main-${t.id}`); if(el) el.addEventListener('click', ()=>this._handleAction(t, null)); });
   },
   _renderContextual(tools, clip){
     const bar=document.getElementById('contextualToolbar'); if(!bar||!window.IconSystem) return;
-    bar.innerHTML=`<div style="display:flex;align-items:center;gap:4px;margin-right:10px;padding-right:10px;border-right:1.5px solid #2A2A2E;flex-shrink:0"><span style="background:${clip.type==='text'?'#5856D6':'#FF3B30'};color:#FFF;padding:3px 7px;border-radius:6px;font-size:9px;font-weight:800">${(clip.type||'video').toUpperCase()}</span><span style="font-size:10px;color:#AAA;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${clip.name}</span></div><div style="display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:none">${tools.map(t=>`<button class="tool-item ${t.danger?'danger':''}" id="ctx-${t.id}" data-action="${t.action}" style="${t.id==='close'?'background:#242429;border:1px solid #2A2A2E;border-radius:20px;min-width:64px':''}${t.id==='delete'?'background:rgba(255,59,48,0.15);border:1px solid rgba(255,59,48,0.3)':''}">${t.id==='close'?'<span>✕</span><span>Close</span>':`${IconSystem.render(t.icon, false, 18)}<span>${t.label}</span>`}</button>`).join('')}</div>`;
+    bar.innerHTML=`<div style="display:flex;align-items:center;gap:4px;margin-right:10px;padding-right:10px;border-right:1.5px solid #2A2A2E;flex-shrink:0"><span style="background:${clip.type==='text'?'#5856D6':clip.type==='image'?'#FF9500':'#FF3B30'};color:#FFF;padding:3px 7px;border-radius:6px;font-size:9px;font-weight:800">${(clip.type||'video').toUpperCase()}</span><span style="font-size:10px;color:#AAA;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${clip.name}</span></div><div style="display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:none">${tools.map((t,i)=>`<button class="tool-item ${t.danger?'danger':''} ${i===0?'first-transform':''}" id="ctx-${t.id}" data-action="${t.action}" style="${i===0?'background:#FF9500;color:#FFF;border-radius:20px;font-weight:800':''}${t.id==='close'?'background:#242429;border:1px solid #2A2A2E;border-radius:20px;min-width:64px':''}${t.id==='delete'?'background:rgba(255,59,48,0.15);border:1px solid rgba(255,59,48,0.3)':''}">${t.id==='close'?'<span>✕</span><span>Close</span>':`${IconSystem.render(t.icon, i===0, 18)}<span>${t.label}</span>`}</button>`).join('')}</div>`;
     bar.classList.add('visible'); tools.forEach(t=>{ const el=document.getElementById(`ctx-${t.id}`); if(el) el.addEventListener('click', ()=>this._handleAction(t, clip)); });
   },
   _handleAction(toolDef, clip){
