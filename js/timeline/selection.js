@@ -1,25 +1,26 @@
+
+/**
+ * Selection v3.6.2 - Fixed Selection + Renderer Sync
+ */
 const Selection = {
-  selectedClip: null,
-  init() { console.log('Selection Phase1 Ready'); },
-  selectClip(clip) {
-    if(!clip) return;
-    if(this.selectedClip) this.selectedClip.isSelected = false;
-    this.selectedClip = clip; clip.isSelected = true;
-    if(window.Store) Store.dispatch({type:'SELECT_CLIP', payload:{id:clip.id, track:clip.track, clipType:clip.type, name:clip.name}});
-    if(window.TimelineUI) { TimelineUI.selectedClip = clip; TimelineUI.render(); }
-    if(window.Toolbar) Toolbar.showForClip(clip);
-    if(window.Player && clip.type==='video') Player.loadClip(clip);
-    if(window.AndroidBridge) AndroidBridge.vibrate(50);
+  selectedClip:null,
+  selectClip(clip){
+    this.selectedClip=clip;
+    console.log('Selection select', clip.id, clip.type);
+    if(window.TimelineUI) TimelineUI.render();
     if(window.EventBus) EventBus.emit(EventBus.EVENTS.CLIP_SELECTED, clip);
+    if(window.Store) Store.dispatch({type:'SELECT_CLIP', payload:{id:clip.id, track:clip.track, clipType:clip.type, name:clip.name}});
+    if(window.Renderer) Renderer.showClip(clip);
+    if(window.Toolbar) Toolbar.showForClip(clip);
   },
-  deselectAll() {
-    if(this.selectedClip) this.selectedClip.isSelected = false;
-    this.selectedClip = null;
-    if(window.Store) Store.dispatch({type:'DESELECT'});
-    if(window.TimelineUI) { TimelineUI.selectedClip = null; TimelineUI.render(); }
-    if(window.Toolbar) Toolbar.hide();
+  deselectAll(){
+    this.selectedClip=null;
+    if(window.TimelineUI) TimelineUI.render();
     if(window.EventBus) EventBus.emit(EventBus.EVENTS.CLIP_DESELECTED, {});
+    if(window.Store) Store.dispatch({type:'DESELECT'});
+    if(window.Toolbar) Toolbar.hide();
+    if(window.Renderer) Renderer._hide();
+    if(window.TransformTool) TransformTool._removeBox();
   }
 };
-window.Selection = Selection;
-Selection.init();
+window.Selection=Selection;
