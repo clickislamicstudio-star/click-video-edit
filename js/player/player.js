@@ -1,26 +1,185 @@
 
 /**
- * Folder: js/player/ File: player.js v3.8 - Transport Fixed No Autoplay
+ * Folder: js/player/ File: renderer.js v3.9 - PIP No Black Fix + Audio Unmute + Static Video + Blue Line Moves
  */
-const Player = {
-  currentTime:0, isPlaying:false, videoEl:null,
+const Renderer = {
+  videoEl:null, pipEl:null, textEl:null, emptyHint:null, currentClip:null,
   init(){
-    console.log('Player v3.8 - No Autoplay - Transport Controls Fixed');
     this.videoEl=document.getElementById('realVideo');
+    this.pipEl=document.getElementById('pipVideo');
+    this.textEl=document.getElementById('textOverlay');
+    this.emptyHint=document.getElementById('emptyHint');
+    console.log('Renderer v3.9 - PIP No Black + Audio Fix - Video Static Blue Moves');
     if(this.videoEl){
+      this.videoEl.style.display='block';
+      this.videoEl.muted=false; // FIX: Audio - was true, now false for audio
       this.videoEl.loop=false;
       this.videoEl.autoplay=false;
-      this.videoEl.addEventListener('ended', ()=>{
-        this.isPlaying=false;
-        const btn=document.getElementById('btnPlayPause');
-        if(btn) btn.textContent='▶';
-        if(window.Transport){ Transport.isPlaying=false; Transport.stopTick(); }
-        const st=document.getElementById('status');
-        if(st) st.textContent='Ended - Tap Play';
+      this.videoEl.playsInline=true;
+      this.videoEl.pause();
+    }
+    if(this.pipEl){
+      this.pipEl.style.display='none';
+      this.pipEl.muted=true;
+      this.pipEl.loop=false;
+    }
+    if(this.textEl){
+      this.textEl.style.display='none';
+      this.textEl.style.zIndex='9999';
+    }
+    if(window.EventBus){
+      EventBus.on(EventBus.EVENTS.CLIP_SELECTED, (clip)=> {
+        const real = clip.clip || clip;
+        const found = window.TimelineUI ? TimelineUI.clips.find(c=>c.id===real.id) : null;
+        this.showClip(found || real);
+      });
+      EventBus.on(EventBus.EVENTS.CLIP_DESELECTED, ()=> this._hideTextOnly());
+      EventBus.on(EventBus.EVENTS.PLAY_PAUSE, (d)=>{
+        if(d.playing){ this.videoEl?.play().catch(()=>{}); this.pipEl?.play().catch(()=>{}); }
+        else { this.videoEl?.pause(); this.pipEl?.pause(); }
+      });
+      EventBus.on(EventBus.EVENTS.PLAYHEAD, (d)=>{
+        if(!window.TimelineUI) return;
+        const time=d.time;
+        // Video static, blue moves - video seeks but stays in place
+        const mainVideo = TimelineUI.clips.find(c=> (c.type==='video'||c.type==='image') && c.track!==4 && time>=c.startTime && time<=c.startTime+c.duration);
+        if(mainVideo && this.videoEl && mainVideo.type==='video'){
+          if(this.videoEl.src!==mainVideo.src){ this.videoEl.src=mainVideo.src; this.videoEl.load(); }
+          const rel=time-mainVideo.startTime;
+          if(Math.abs(this.videoEl.currentTime-rel)>0.3) this.videoEl.currentTime=rel;
+        }
+        // PIP overlay
+        const pipClip = TimelineUI.clips.find(c=> (c.type==='pip'||c.type==='overlay'||c.track===4) && time>=c.startTime && time<=c.startTime+c.duration);
+        if(pipClip && this.pipEl){
+          if(pipClip.type==='video' || pipClip.type==='pip'){
+            if(this.pipEl.src!==pipClip.src){ this.pipEl.src=pipClip.src; this.pipEl.load(); }
+            this.pipEl.style.display='block';
+          } else if(pipClip.type==='image'){
+            // For image PIP, show as background image in pipEl placeholder - use main videoEl as fallback?
+            this.pipEl.style.display='none';
+          }
+        } else if(this.pipEl){
+          this.pipEl.style.display='none';
+        }
       });
     }
   },
-  play(){ if(this.videoEl){ this.videoEl.play(); this.isPlaying=true; } },
-  pause(){ if(this.videoEl){ this.videoEl.pause(); this.isPlaying=false; } }
+  showClip(clip){
+    if(!clip) return;
+    this.currentClip=clip;
+    if(this.emptyHint) this.emptyHint.style.display='none';
+    const st=document.getElementById('status');
+    if(st) st.textContent = 'Selected: '+clip.name+' ('+clip.type+') - '+ (clip.type==='pip'?'PIP Overlay - No Black':'Paused');
+    
+    if(clip.type==='video' || clip.type==='image'){
+      this.showVideo(clip);
+      if(this.pipEl) this.pipEl.style.display='none';
+    } else if(clip.type==='pip' || clip.type==='overlay'){
+      // FIX Black Screen: Show main video as background + PIP as overlay
+      const mainVideo = window.TimelineUI ? TimelineUI.clips.find(c=> (c.type==='video'||c.type==='image') && c.track!==4) : null;
+      if(mainVideo){
+        this.showVideo(mainVideo, true);
+        if(st) st.textContent='Main: '+mainVideo.name+' + PIP: '+clip.name;
+      }
+      if(clip.type==='image' || clip.src && clip.src.includes('image')){
+        // Image PIP - show in pipVideo as image? Use videoEl for now with overlay
+        this.showPIPImage(clip);
+      } else {
+        this.showPIPVideo(clip);
+      }
+    } else if(clip.type==='text'){
+      this.showText(clip);
+      const under = window.TimelineUI ? TimelineUI.clips.find(c=> (c.type==='video'||c.type==='image') && c.track!==4) : null;
+      if(under) this.showVideo(under, true);
+      else { if(this.videoEl) this.videoEl.style.display='none'; }
+    } else if(clip.type==='audio'){
+      this._hideTextOnly();
+      const videoClip = window.TimelineUI ? TimelineUI.clips.find(c=> c.type==='video'||c.type==='image') : null;
+      if(videoClip) this.showVideo(videoClip, true);
+      else if(this.videoEl) this.videoEl.style.display='none';
+    }
+  },
+  showVideo(clip, isBackground=false){
+    if(!this.videoEl) this.videoEl=document.getElementById('realVideo');
+    if(!this.videoEl) return;
+    if(clip.src){
+      if(this.videoEl.src !== clip.src){
+        this.videoEl.src = clip.src;
+        this.videoEl.load();
+        this.videoEl.pause();
+      }
+      this.videoEl.style.display='block';
+      this.videoEl.style.opacity='1';
+      this.videoEl.muted=false;
+      if(clip.transform && !isBackground){
+        const t=clip.transform;
+        let tr=`translate(${t.x*3}px, ${t.y*3}px) rotate(${t.rotation||0}deg) scale(${t.scale||1})`;
+        if(t.flipX) tr+=' scaleX(-1)';
+        this.videoEl.style.transform = tr;
+      }
+    } else if(clip.type==='image' && clip.src){
+      // Image as video - show as image
+      this.videoEl.style.display='block';
+      this.videoEl.poster=clip.src;
+    }
+  },
+  showPIPVideo(clip){
+    if(!this.pipEl) this.pipEl=document.getElementById('pipVideo');
+    if(!this.pipEl) return;
+    if(clip.src){
+      if(this.pipEl.src!==clip.src){
+        this.pipEl.src=clip.src;
+        this.pipEl.load();
+        this.pipEl.pause();
+      }
+      this.pipEl.style.display='block';
+    }
+  },
+  showPIPImage(clip){
+    // For image overlay - create img overlay
+    let img=document.getElementById('pipImageOverlay');
+    if(!img){
+      img=document.createElement('img');
+      img.id='pipImageOverlay';
+      img.style.cssText='position:absolute;right:10px;bottom:10px;width:40%;aspect-ratio:9/16;object-fit:cover;border-radius:8px;border:2px solid #FFF;z-index:12';
+      document.getElementById('playerWrap')?.appendChild(img);
+    }
+    img.src=clip.src;
+    img.style.display='block';
+    setTimeout(()=>{ img.style.display='none'; }, 5000);
+  },
+  showText(clip){
+    if(!this.textEl) this.textEl=document.getElementById('textOverlay');
+    if(!this.textEl) return;
+    this.textEl.style.display='block';
+    this.textEl.textContent = clip.text || clip.name || 'Text';
+    this.textEl.style.fontSize = (clip.fontSize||32)+'px';
+    this.textEl.style.color = clip.fontColor||'#FFF';
+    this.textEl.style.fontFamily = clip.fontFamily||'Inter';
+    this.textEl.style.fontWeight='700';
+    if(clip.fontColor && clip.fontColor.includes('gradient')){
+      this.textEl.style.background = clip.fontColor;
+      this.textEl.style.webkitBackgroundClip='text';
+      this.textEl.style.backgroundClip='text';
+      this.textEl.style.webkitTextFillColor='transparent';
+      this.textEl.style.color='transparent';
+    } else {
+      this.textEl.style.background='transparent';
+      this.textEl.style.webkitBackgroundClip='initial';
+      this.textEl.style.backgroundClip='initial';
+      this.textEl.style.webkitTextFillColor='initial';
+      this.textEl.style.color=clip.fontColor||'#FFF';
+    }
+    if(clip.transform){
+      const t=clip.transform;
+      this.textEl.style.transform=`translate(-50%,-50%) translate(${t.x*3}px, ${t.y*3}px) rotate(${t.rotation||0}deg) scale(${t.scale||1})`;
+    } else {
+      this.textEl.style.transform='translate(-50%,-50%)';
+    }
+  },
+  _hideTextOnly(){ if(this.textEl) this.textEl.style.display='none'; const img=document.getElementById('pipImageOverlay'); if(img) img.style.display='none'; },
+  _hide(){ this._hideTextOnly(); if(this.videoEl) this.videoEl.style.display='none'; if(this.pipEl) this.pipEl.style.display='none'; },
+  _forceShow(clip){ this.showClip(clip); }
 };
-window.Player=Player;
+window.Renderer=Renderer;
+setTimeout(()=>Renderer.init(), 200);
