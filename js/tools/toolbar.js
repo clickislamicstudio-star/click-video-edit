@@ -1,5 +1,8 @@
+
 /**
- * Toolbar v3.2 - Close fix + Delete fix + Separate tabs handling
+ * Toolbar v3.3 - Professional - Close at END after Delete
+ * Order: Edit | Font | Color | Template | Anim | BG | Delete | Close (Close at end)
+ * Also separate tab functionality with side-by-side buttons visible
  */
 const Toolbar = {
   currentMode:'main', currentClip:null,
@@ -19,8 +22,8 @@ const Toolbar = {
       {id:'speed', label:'Speed', icon:'speed', action:'speed'},
       {id:'volume', label:'Volume', icon:'volume', action:'volume'},
       {id:'filter', label:'Filter', icon:'filter', action:'filter'},
-      {id:'close', label:'Close', icon:'delete', action:'closeBar'},
-      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true}
+      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true},
+      {id:'close', label:'Close', icon:'close', action:'closeBar'}
     ],
     text:[
       {id:'edit', label:'Edit', icon:'text', action:'editText'},
@@ -29,18 +32,18 @@ const Toolbar = {
       {id:'template', label:'Template', icon:'style', action:'template'},
       {id:'anim', label:'Anim', icon:'animation', action:'anim'},
       {id:'bg', label:'BG', icon:'bg', action:'bg'},
-      {id:'close', label:'Close', icon:'delete', action:'closeBar'},
-      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true}
+      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true},
+      {id:'close', label:'Close', icon:'close', action:'closeBar'}
     ],
     audio:[
       {id:'volume', label:'Volume', icon:'volume', action:'volume'},
       {id:'fade', label:'Fade', icon:'fade', action:'fade'},
-      {id:'close', label:'Close', icon:'delete', action:'closeBar'},
-      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true}
+      {id:'delete', label:'Delete', icon:'delete', action:'delete', danger:true},
+      {id:'close', label:'Close', icon:'close', action:'closeBar'}
     ]
   },
   init(){
-    console.log('Toolbar v3.2 - Close+Delete fix');
+    console.log('Toolbar v3.3 - Close at END');
     this.renderMain();
     if(window.EventBus){
       EventBus.on(EventBus.EVENTS.CLIP_SELECTED, (clip)=>this.showForClip(clip));
@@ -68,13 +71,26 @@ const Toolbar = {
   _renderContextual(tools, clip){
     const bar=document.getElementById('contextualToolbar');
     if(!bar||!window.IconSystem) return;
-    bar.innerHTML=`<div style="display:flex;align-items:center;gap:4px;margin-right:8px;padding-right:8px;border-right:1px solid #444;flex-shrink:0"><span style="font-size:10px;color:#FF3B30;font-weight:800">${(clip.type||'video').toUpperCase()}</span><span style="font-size:9px;color:#AAA;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${clip.name}</span></div><div style="display:flex;gap:2px;overflow-x:auto;flex:1">${tools.map(t=>`<button class="tool-item ${t.danger?'danger':''}" id="ctx-${t.id}" data-action="${t.action}" style="${t.id==='close'?'background:#2A2A2A;border-radius:50%;min-width:36px;width:36px;height:36px;padding:0;justify-content:center':''}">${t.id==='close'?'✕':IconSystem.render(t.icon, false, 18)}${t.id!=='close'?`<span>${t.label}</span>`:''}</button>`).join('')}</div>`;
+    // Professional strip with scroll and close at end
+    bar.innerHTML=`
+      <div style="display:flex;align-items:center;gap:4px;margin-right:10px;padding-right:10px;border-right:1.5px solid #2A2A2E;flex-shrink:0">
+        <span style="background:${clip.type==='text'?'#5856D6':'#FF3B30'};color:#FFF;padding:3px 7px;border-radius:6px;font-size:9px;font-weight:800;letter-spacing:0.3px">${(clip.type||'video').toUpperCase()}</span>
+        <span style="font-size:10px;color:#AAA;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${clip.name}</span>
+      </div>
+      <div style="display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:none">
+        ${tools.map(t=>`
+          <button class="tool-item ${t.danger?'danger':''}" id="ctx-${t.id}" data-action="${t.action}" 
+            style="${t.id==='close'?'background:#242429;border:1px solid #2A2A2E;border-radius:20px;min-width:64px':''}${t.id==='delete'?'background:rgba(255,59,48,0.15);border:1px solid rgba(255,59,48,0.3)':''}">
+            ${t.id==='close'?'<span style="font-size:12px">✕</span><span>Close</span>':`${IconSystem.render(t.icon, false, 18)}<span>${t.label}</span>`}
+          </button>
+        `).join('')}
+      </div>
+    `;
     bar.classList.add('visible');
     tools.forEach(t=>{ const el=document.getElementById(`ctx-${t.id}`); if(el) el.addEventListener('click', ()=>this._handleAction(t, clip)); });
   },
   _handleAction(toolDef, clip){
     const targetClip=clip||this.currentClip||window.Selection?.selectedClip;
-    console.log('Toolbar action', toolDef.action, targetClip?.id);
     if(navigator.vibrate) navigator.vibrate(20);
     switch(toolDef.action){
       case 'import': if(window.MediaImportTool) MediaImportTool.importToTimeline(); break;
@@ -92,20 +108,20 @@ const Toolbar = {
       case 'speed': if(window.SpeedTool) SpeedTool.showUI(targetClip); break;
       case 'volume': if(window.AudioTool) AudioTool.showVolumeUI(targetClip); break;
       case 'filter': if(window.FilterTool) FilterTool.showUI(targetClip); break;
-      case 'closeBar': this.hide(); if(window.Selection) Selection.deselectAll(); if(window.Renderer) Renderer._hide(); break;
+      case 'closeBar': 
+        this.hide(); 
+        if(window.Selection) Selection.deselectAll(); 
+        if(window.Renderer){ Renderer._hide(); if(Renderer.textEl) Renderer.textEl.style.top='50%'; }
+        // Close all modals
+        ['textEditorModal','speedEditorModal','filterEditorModal','audioEditorModal'].forEach(id=>{ const m=document.getElementById(id); if(m) m.style.display='none'; });
+        break;
       case 'delete':
-        console.log('Delete requested for', targetClip?.id);
         if(!targetClip) break;
-        if(window.TimelineUI){
-          TimelineUI.clips=TimelineUI.clips.filter(c=>c.id!==targetClip.id);
-          TimelineUI.render();
-        }
+        if(window.TimelineUI){ TimelineUI.clips=TimelineUI.clips.filter(c=>c.id!==targetClip.id); TimelineUI.render(); }
         if(window.Selection) Selection.deselectAll();
         this.hide();
         if(window.Renderer) Renderer._hide();
-        // Close any open modals
-        const modals=['textEditorModal','audioEditorModal','speedEditorModal','filterEditorModal'];
-        modals.forEach(id=>{ const m=document.getElementById(id); if(m) m.style.display='none'; });
+        ['textEditorModal','speedEditorModal','filterEditorModal','audioEditorModal'].forEach(id=>{ const m=document.getElementById(id); if(m) m.style.display='none'; });
         break;
       case 'export': if(window.ExportEngine) ExportEngine.showExportDialog(); break;
     }
