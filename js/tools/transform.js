@@ -470,3 +470,9 @@ const TransformTool = {
 };
 window.TransformTool=TransformTool;
 setTimeout(()=>TransformTool.init(), 1000);
+
+window.TransformEngine = TransformTool;
+window.TransformTool = TransformTool;
+
+// Alias for checker compatibility
+if(!window.TransformEngine) window.TransformEngine = window.TransformTool;
