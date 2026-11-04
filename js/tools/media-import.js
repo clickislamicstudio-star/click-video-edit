@@ -1,6 +1,6 @@
 
 /**
- * Folder: js/tools/ File: media-import.js v3.9 - Permission Once + Audio Fix + Outside Handles + PIP No Black
+ * Folder: js/tools/ File: media-import.js v3.9 FINAL - Permission Once + Waveform + PIP Check + No Emoji
  */
 const MediaImportTool = {
   async generateWaveform(file){
@@ -24,9 +24,11 @@ const MediaImportTool = {
     return Array.from({length:40}).map(()=> 10+Math.random()*80);
   },
   async importToTimeline(typeHint){
-    // Permission Once logic
-    if(!PermissionManager.hasFilePermission()){
-      console.log('First time - File permission will be requested via file picker');
+    if(!window.PermissionManager){
+      console.error('PermissionManager missing');
+    }
+    if(!window.PermissionManager?.hasFilePermission()){
+      console.log('First time - File permission via file picker');
     }
     
     let accept = 'video/*,image/*,audio/*';
@@ -43,7 +45,7 @@ const MediaImportTool = {
     
     if(!f) return [];
     
-    PermissionManager.markFileGranted();
+    if(window.PermissionManager) PermissionManager.markFileGranted();
     
     const url = URL.createObjectURL(f);
     const isVideo = f.type.startsWith('video');
@@ -79,7 +81,7 @@ const MediaImportTool = {
     if(track===4){
       const hasVideo = window.TimelineUI && TimelineUI.clips.some(c=> c.type==='video'||c.type==='image');
       if(!hasVideo){
-        alert('Add a main video first to use PIP/Overlay');
+        alert('Add a main video first to use PIP/Overlay - Master Prompt Rule');
         return [];
       }
     }
