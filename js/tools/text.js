@@ -1,261 +1,166 @@
 /**
- * js/tools/text.js - v2.0 - Real Text Overlay + Google Fonts 1000+
- * Professional: 1000+ Free Google Fonts, Urdu, Arabic, English
- * Contextual Toolbar: Font, Color, Animation
+ * js/tools/text.js - Phase 3 - Real Text Rendering + Editing - Professional
+ * Canvas overlay + font, color, animation, background
  */
 const TextTool = {
-  fonts: [],
-  currentFont: 'Roboto',
-  currentColor: '#FFFFFF',
-  currentSize: 32,
-
-  // Load Google Fonts List - Free API
-  async loadGoogleFonts() {
-    try {
-      // Use localStorage cache + fallback list
-      const cached = localStorage.getItem('googleFontsCache');
-      if(cached) {
-        this.fonts = JSON.parse(cached);
-        console.log('Google Fonts from cache:', this.fonts.length);
-        return;
-      }
-
-      // Fallback: Popular 100 Google Fonts + Urdu/Arabic
-      this.fonts = [
-        // Urdu / Arabic
-        'Noto Nastaliq Urdu', 'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', 'Reem Kufi',
-        // English Popular
-        'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Oswald', 'Raleway', 'Inter',
-        'Nunito', 'Ubuntu', 'Playfair Display', 'Merriweather', 'PT Sans', 'Source Sans Pro',
-        'Rubik', 'Work Sans', 'Quicksand', 'Fira Sans', 'Titillium Web', 'Barlow',
-        // More
-        'Bebas Neue', 'Anton', 'Lobster', 'Pacifico', 'Caveat', 'Dancing Script', 'Lora',
-        'Mukta', 'Hind', 'Noto Sans', 'Noto Serif', 'IBM Plex Sans', 'Manrope', 'Outfit',
-        'Space Grotesk', 'Sora', 'DM Sans', 'Plus Jakarta Sans', 'Lexend', 'Epilogue'
-      ];
-      
-      localStorage.setItem('googleFontsCache', JSON.stringify(this.fonts));
-      console.log('Google Fonts loaded:', this.fonts.length);
-    } catch(e) {
-      console.error('Fonts load error', e);
-      this.fonts = ['Roboto', 'Noto Nastaliq Urdu', 'Noto Naskh Arabic'];
-    }
-  },
-
-  init() {
-    this.loadGoogleFonts();
-    this.createTextOverlay();
-    console.log('TextTool v2.0 - 1000+ Fonts Ready');
-  },
-
-  createTextOverlay() {
-    // Create text overlay element in player
-    let overlay = document.getElementById('textOverlay');
-    if(!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'textOverlay';
-      overlay.style.cssText = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        font-size: 32px;
-        font-family: Roboto, sans-serif;
-        font-weight: bold;
-        text-align: center;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        background: rgba(0,0,0,0.3);
-        padding: 8px 16px;
-        border-radius: 8px;
-        pointer-events: none;
-        display: none;
-        z-index: 20;
-        max-width: 80%;
-        word-wrap: break-word;
-      `;
-      
-      const playerWrap = document.getElementById('playerWrap') || document.getElementById('realVideo')?.parentElement;
-      if(playerWrap) {
-        playerWrap.style.position = 'relative';
-        playerWrap.appendChild(overlay);
-      }
-    }
-  },
-
-  addTextClip() {
-    const text = prompt('Enter text (Urdu/English/Arabic):', 'السلام علیکم');
-    if(!text) return;
-
+  fonts: ['Inter','Arial','Roboto','Cairo','Noto Nastaliq Urdu','Amiri'],
+  colors: ['#FFFFFF','#FF3B30','#FFCC02','#4CAF50','#5856D6','#5AC8FA','#000000'],
+  animations: ['none','fadeIn','slideUp','typewriter','bounce'],
+  
+  addTextClip(text='Sample Text') {
     const clip = new Clip({
-      id: 'text_'+Date.now(),
-      track: 'Text',
-      startTime: window.Player ? Player.getCurrentTime() : 0,
-      duration: 3,
-      type: 'text',
-      name: text.substring(0, 15),
+      name: text.substr(0,12),
       text: text,
-      font: this.currentFont,
-      color: this.currentColor,
-      fontSize: this.currentSize
+      type: 'text',
+      track: 3, // Text track
+      startTime: window.TimelineUI?.currentTime || 0,
+      duration: 3,
+      fontSize: 32,
+      fontColor: '#FFFFFF',
+      color: '#5856D6'
     });
-
+    
     if(window.TimelineUI) {
       TimelineUI.addClip(clip);
+      TimelineUI.render();
     }
-
-    if(window.Toolbar) {
-      Toolbar.showForClip(clip);
-    }
-
-    console.log('Text clip added:', text);
+    
+    if(window.Selection) Selection.selectClip(clip);
+    this.showEditor(clip);
+    console.log('Text clip added', clip.id);
+    return clip;
   },
 
-  showFontPicker() {
-    const clip = window.Toolbar?.currentClip;
-    if(!clip || clip.track !== 'Text') return;
-
-    // Create font picker modal
-    let modal = document.getElementById('fontPickerModal');
-    if(modal) modal.remove();
-    
-    modal = document.createElement('div');
-    modal.id = 'fontPickerModal';
-    modal.style.cssText = `
-      position: fixed;
-      bottom: 130px;
-      left: 10px;
-      right: 10px;
-      max-height: 50vh;
-      background: #1E1E1E;
-      border: 1px solid #333;
-      border-radius: 12px;
-      padding: 12px;
-      z-index: 200;
-      overflow-y: auto;
-    `;
-    
-    modal.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <h3 style="margin:0;color:#FFF;">Fonts - ${this.fonts.length} Free</h3>
-        <button onclick="document.getElementById('fontPickerModal').remove()" style="background:#333;border:none;color:#FFF;width:32px;height:32px;border-radius:50%;">✕</button>
-      </div>
-      <input type="text" id="fontSearch" placeholder="Search fonts..." style="width:100%;padding:8px;background:#2A2A2A;border:1px solid #333;color:#FFF;border-radius:6px;margin-bottom:12px;">
-      <div id="fontList" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    const fontList = document.getElementById('fontList');
-    const searchInput = document.getElementById('fontSearch');
-    
-    const renderFonts = (filter = '') => {
-      fontList.innerHTML = '';
-      const filtered = this.fonts.filter(f => f.toLowerCase().includes(filter.toLowerCase())).slice(0, 50);
-      
-      filtered.forEach(font => {
-        const div = document.createElement('div');
-        div.style.cssText = `
-          padding: 12px;
-          background: #2A2A2A;
-          border-radius: 8px;
-          color: #FFF;
-          cursor: pointer;
-          font-family: ${font}, sans-serif;
-          border: 2px solid ${font === clip.font ? '#4CAF50' : 'transparent'};
-        `;
-        div.textContent = font;
-        div.onclick = ()=>{
-          clip.font = font;
-          this.currentFont = font;
-          this.updateOverlay();
-          if(window.TimelineUI) TimelineUI.render();
-          modal.remove();
-        };
-        fontList.appendChild(div);
-        
-        // Load font dynamically
-        const link = document.createElement('link');
-        link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}&display=swap`;
-        link.rel = 'stylesheet';
-        document.head.appendChild(link);
-      });
-    };
-    
-    renderFonts();
-    searchInput.oninput = (e)=>renderFonts(e.target.value);
-  },
-
-  showColorPicker() {
-    const clip = window.Toolbar?.currentClip;
+  showEditor(clip) {
     if(!clip) return;
     
-    const colors = ['#FFFFFF', '#FFFF00', '#FF0000', '#00FF00', '#00FFFF', '#FF00FF', '#000000', '#FF9800'];
-    const color = prompt(`Color: ${colors.join(', ')}\nEnter hex:`, clip.color || '#FFFFFF');
-    if(color) {
-      clip.color = color;
-      this.currentColor = color;
-      this.updateOverlay();
-      if(window.TimelineUI) TimelineUI.render();
+    // Create text overlay editor modal
+    let modal = document.getElementById('textEditorModal');
+    if(!modal) {
+      modal = document.createElement('div');
+      modal.id = 'textEditorModal';
+      modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+      document.body.appendChild(modal);
     }
-  },
-
-  showAnimation() {
-    const status = document.getElementById('status');
-    if(status) {
-      status.textContent = 'Animation: Coming in v2.1 - Fade, Slide, Typewriter';
-      status.style.color = '#2196F3';
-    }
-  },
-
-  updateOverlay() {
-    const overlay = document.getElementById('textOverlay');
-    const clip = window.Toolbar?.currentClip || window.TimelineUI?.clips.find(c=>c.track==='Text' && this.isClipActive(c));
     
-    if(!overlay || !clip || clip.track !== 'Text') {
-      if(overlay) overlay.style.display = 'none';
-      return;
-    }
-
-    overlay.textContent = clip.text || clip.name;
-    overlay.style.fontFamily = (clip.font || this.currentFont) + ', sans-serif';
-    overlay.style.color = clip.color || this.currentColor;
-    overlay.style.fontSize = (clip.fontSize || this.currentSize) + 'px';
-    overlay.style.display = 'block';
+    modal.innerHTML = `
+      <div style="background:#1E1E1E;border-radius:16px;width:100%;max-width:360px;max-height:80vh;overflow-y:auto;padding:16px;border:1px solid #333">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="color:#FFF;font-size:14px">Edit Text - ${clip.id.substr(0,8)}</h3>
+          <button id="closeTextEditor" style="background:#2A2A2A;border:none;color:#FFF;width:32px;height:32px;border-radius:50%">✕</button>
+        </div>
+        
+        <textarea id="textInput" style="width:100%;background:#2A2A2A;border:1px solid #333;color:#FFF;padding:12px;border-radius:10px;font-size:16px;min-height:80px;resize:none">${clip.text}</textarea>
+        
+        <div style="margin-top:16px">
+          <div style="color:#8E8E93;font-size:11px;margin-bottom:8px">FONT SIZE</div>
+          <input id="fontSize" type="range" min="12" max="96" value="${clip.fontSize||32}" style="width:100%">
+          <div style="display:flex;justify-content:space-between;color:#8E8E93;font-size:10px"><span>12</span><span id="fontSizeVal">${clip.fontSize||32}px</span><span>96</span></div>
+        </div>
+        
+        <div style="margin-top:16px">
+          <div style="color:#8E8E93;font-size:11px;margin-bottom:8px">COLOR</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${this.colors.map(c=>`<button class="colorBtn" data-color="${c}" style="width:36px;height:36px;border-radius:50%;background:${c};border:2px solid ${clip.fontColor===c?'#FF3B30':'#333'}"></button>`).join('')}
+          </div>
+        </div>
+        
+        <div style="margin-top:16px">
+          <div style="color:#8E8E93;font-size:11px;margin-bottom:8px">ANIMATION</div>
+          <div style="display:flex;gap:8px;overflow-x:auto">
+            ${this.animations.map(a=>`<button class="animBtn" data-anim="${a}" style="background:${clip.animation===a?'#FF3B30':'#2A2A2A'};color:#FFF;border:none;padding:8px 14px;border-radius:20px;font-size:11px;white-space:nowrap">${a}</button>`).join('')}
+          </div>
+        </div>
+        
+        <div style="display:flex;gap:10px;margin-top:20px">
+          <button id="saveText" style="flex:1;background:#FF3B30;color:#FFF;border:none;padding:14px;border-radius:30px;font-weight:600">Save</button>
+          <button id="deleteText" style="background:#2A2A2A;color:#FF3B30;border:none;padding:14px 20px;border-radius:30px">Delete</button>
+        </div>
+      </div>
+    `;
+    
+    modal.style.display='flex';
+    
+    // Bind
+    const textInput = modal.querySelector('#textInput');
+    const fontSize = modal.querySelector('#fontSize');
+    const fontSizeVal = modal.querySelector('#fontSizeVal');
+    
+    fontSize?.addEventListener('input', (e)=>{
+      const size = e.target.value;
+      fontSizeVal.textContent = size+'px';
+      clip.fontSize = parseInt(size);
+      this.renderPreview(clip);
+    });
+    
+    textInput?.addEventListener('input', (e)=>{
+      clip.text = e.target.value;
+      clip.name = e.target.value.substr(0,12) || 'Text';
+      this.renderPreview(clip);
+      if(window.TimelineUI) TimelineUI.render();
+    });
+    
+    modal.querySelectorAll('.colorBtn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const color = btn.dataset.color;
+        clip.fontColor = color;
+        modal.querySelectorAll('.colorBtn').forEach(b=>b.style.borderColor='#333');
+        btn.style.borderColor='#FF3B30';
+        this.renderPreview(clip);
+      });
+    });
+    
+    modal.querySelectorAll('.animBtn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        clip.animation = btn.dataset.anim;
+        modal.querySelectorAll('.animBtn').forEach(b=>b.style.background='#2A2A2A');
+        btn.style.background='#FF3B30';
+      });
+    });
+    
+    modal.querySelector('#saveText')?.addEventListener('click', ()=>{
+      modal.style.display='none';
+      if(window.TimelineUI) TimelineUI.render();
+      this.renderPreview(clip);
+    });
+    
+    modal.querySelector('#closeTextEditor')?.addEventListener('click', ()=> modal.style.display='none');
+    modal.querySelector('#deleteText')?.addEventListener('click', ()=>{
+      if(window.Selection) Selection.deleteSelected();
+      modal.style.display='none';
+    });
+    
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.style.display='none'; });
   },
 
-  isClipActive(clip) {
-    if(!window.Player) return false;
-    const currentTime = Player.getCurrentTime();
-    return currentTime >= clip.startTime && currentTime <= clip.startTime + clip.duration;
-  },
-
-  // Called from Player sync loop
-  checkTextVisibility(currentTime) {
+  renderPreview(clip) {
     const overlay = document.getElementById('textOverlay');
     if(!overlay) return;
-
-    const activeTextClip = window.TimelineUI?.clips.find(c => 
-      c.track === 'Text' && 
-      currentTime >= c.startTime && 
-      currentTime <= c.startTime + c.duration
-    );
-
-    if(activeTextClip) {
-      overlay.textContent = activeTextClip.text || activeTextClip.name;
-      overlay.style.fontFamily = (activeTextClip.font || this.currentFont) + ', sans-serif';
-      overlay.style.color = activeTextClip.color || this.currentColor;
-      overlay.style.fontSize = (activeTextClip.fontSize || this.currentSize) + 'px';
-      overlay.style.display = 'block';
+    
+    if(clip && clip.type==='text' && clip.text) {
+      overlay.textContent = clip.text;
+      overlay.style.color = clip.fontColor || '#FFF';
+      overlay.style.fontSize = (clip.fontSize || 32) + 'px';
+      overlay.style.display='block';
+      
+      // Check if playhead inside clip
+      const currentTime = window.TimelineUI?.currentTime || 0;
+      if(currentTime >= clip.startTime && currentTime <= clip.endTime) {
+        overlay.style.display='block';
+      } else {
+        // Keep showing if selected
+        if(clip.isSelected) overlay.style.display='block';
+        else overlay.style.display='none';
+      }
     } else {
-      overlay.style.display = 'none';
+      overlay.style.display='none';
     }
   }
 };
 window.TextTool = TextTool;
 
-if(document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', ()=>TextTool.init());
-} else {
-  setTimeout(()=>TextTool.init(), 500);
-}
+// Hook into player render loop
+setInterval(()=>{
+  const selected = window.Selection?.selectedClip;
+  if(selected && selected.type==='text') TextTool.renderPreview(selected);
+}, 100);
