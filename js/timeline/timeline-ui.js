@@ -1,6 +1,7 @@
 
 /**
- * Folder: js/timeline/ File: timeline-ui.js v3.9 - Corner Outside Bottom + Blue Line to Toolbar + No Emoji
+ * Folder: js/timeline/ File: timeline-ui.js v3.9 FINAL - Outside Bottom Handles + No Emoji + Master Prompt
+ * Pro Order Media|Audio|Text|PIP - Hybrid Thin - Waveform - Reference 4th Screenshot
  */
 const TimelineUI = {
   clips:[],
@@ -9,7 +10,7 @@ const TimelineUI = {
   init(id){
     this.container=document.getElementById(id||'timelineArea');
     if(!this.container) return;
-    console.log('TimelineUI v3.9 - Corner Outside Bottom - No Emoji - Waveform');
+    console.log('TimelineUI v3.9 FINAL - Outside Bottom Handles - No Emoji - Master Prompt');
     if(window.ZoomEngine) this.pixelsPerSecond=ZoomEngine.currentPps;
     if(window.Transport) this.pixelsPerSecond=Transport.pps;
     this.render();
@@ -32,10 +33,10 @@ const TimelineUI = {
     if(window.Transport){ Transport.totalDuration=Math.max(maxTime,10.4); Transport.renderRuler(); Transport.syncPlayhead(); }
     
     const tracks=[
-      {id:1,name:'Media',type:'media',cls:'Media',desc:'video+photo',icon:'M'},
-      {id:2,name:'Audio',type:'audio',cls:'Audio',desc:'BGM',icon:'A'},
-      {id:3,name:'Text',type:'text',cls:'Text',desc:'auto',icon:'T'},
-      {id:4,name:'PIP',type:'pip',cls:'PIP',desc:'overlay',icon:'P'}
+      {id:1,name:'Media',cls:'Media',desc:'video+photo',icon:'M'},
+      {id:2,name:'Audio',cls:'Audio',desc:'BGM',icon:'A'},
+      {id:3,name:'Text',cls:'Text',desc:'auto',icon:'T'},
+      {id:4,name:'PIP',cls:'PIP',desc:'overlay',icon:'P'}
     ];
     
     let html='<div style="display:flex;flex-direction:column;width:100%;">';
@@ -70,19 +71,16 @@ const TimelineUI = {
         if(c.type==='audio'){
           const bars = c.waveform ? c.waveform.map(h=>`<div style="width:2px;height:${h}%;background:${selected?'#FFF':'#0A84FF'};border-radius:1px;opacity:${selected?1:0.9}"></div>`).join('') : Array.from({length: Math.floor(width/4)}).map(()=>`<div style="width:2px;height:${8+Math.random()*80}%;background:${selected?'#FFF':'#0A84FF'};border-radius:1px"></div>`).join('');
           inner=`<div style="display:flex;align-items:center;gap:3px;height:100%;width:100%"><div style="flex:1;display:flex;align-items:center;gap:1.5px;height:18px;overflow:hidden">${bars}</div><span style="font-size:8px;background:rgba(0,0,0,0.5);padding:1px 4px;border-radius:6px;margin-left:auto">${Math.floor(c.duration)}s</span></div>`;
-        } else if(c.type==='video' || c.type==='image' || c.type==='pip'){
-          inner=`<div style="display:flex;align-items:center;height:100%;width:100%;position:relative"><div style="width:100%;height:80%;background:linear-gradient(90deg, ${bg}22, ${bg}44);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#FFF;font-weight:600">${c.type==='image'?'IMG':c.type==='pip'?'PIP':'VID'}</div><span style="position:absolute;top:2px;right:4px;font-size:7px;background:rgba(0,0,0,0.6);padding:1px 3px;border-radius:4px">00:${String(Math.floor(c.duration)).padStart(2,'0')}</span></div>`;
         } else {
-          inner=`<span style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">${c.type==='text'? (c.text||c.name||'Text').substr(0,14) : c.name.substr(0,16)}</span>`;
+          inner=`<div style="display:flex;align-items:center;height:100%;width:100%;position:relative"><div style="width:100%;height:80%;background:linear-gradient(90deg, ${bg}22, ${bg}44);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#FFF;font-weight:600">${c.type==='image'?'IMG':c.type==='pip'?'PIP':c.type==='text'?'TXT':'VID'}</div><span style="position:absolute;top:2px;right:4px;font-size:7px;background:rgba(0,0,0,0.6);padding:1px 3px;border-radius:4px">00:${String(Math.floor(c.duration)).padStart(2,'0')}</span></div>`;
         }
         
-        // FIX: Corner Outside Bottom - as per reference 4th screenshot - white handle outside
         const cornerHandle = selected ? `
           <div data-trim="left" style="position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:20px;height:28px;background:#FFF;border-radius:8px 0 0 8px;display:flex;align-items:center;justify-content:center;color:#000;font-size:14px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.5);cursor:ew-resize;z-index:10;border:1px solid #E5E5EA"><</div>
           <div data-trim="right" style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:20px;height:28px;background:#FFF;border-radius:0 8px 8px 0;display:flex;align-items:center;justify-content:center;color:#000;font-size:14px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.5);cursor:ew-resize;z-index:10;border:1px solid #E5E5EA">></div>
         ` : '';
         
-        html+=`<div data-clip-id="${c.id}" title="${c.name} - Drag corner to trim - Outside bottom handle" style="position:absolute;left:${left}px;width:${width}px;top:4px;bottom:4px;background:${bg};border-radius:6px;display:flex;align-items:center;padding:0 6px;color:#FFF;cursor:pointer;overflow:visible;${selected?'border:2px solid #0A84FF;box-shadow:0 0 0 2px rgba(10,132,255,0.3);z-index:5':''}">${inner}${cornerHandle}</div>`;
+        html+=`<div data-clip-id="${c.id}" title="${c.name} - Outside bottom handle - Trim drag" style="position:absolute;left:${left}px;width:${width}px;top:4px;bottom:4px;background:${bg};border-radius:6px;display:flex;align-items:center;padding:0 6px;color:#FFF;cursor:pointer;overflow:visible;${selected?'border:2px solid #0A84FF;box-shadow:0 0 0 2px rgba(10,132,255,0.3);z-index:5':''}">${inner}${cornerHandle}</div>`;
       });
       
       if(tr.name==='PIP' && filtered.length===0){
@@ -108,16 +106,12 @@ const TimelineUI = {
           if(window.AndroidBridge) AndroidBridge.vibrate(30);
         }
       });
-      // Trim drag
       const leftHandle=el.querySelector('[data-trim="left"]');
       const rightHandle=el.querySelector('[data-trim="right"]');
       if(leftHandle){
         leftHandle.addEventListener('pointerdown', (e)=>{
-          e.stopPropagation();
-          e.preventDefault();
+          e.stopPropagation(); e.preventDefault();
           const startX=e.clientX;
-          const startLeft=parseFloat(el.style.left);
-          const startWidth=parseFloat(el.style.width);
           const clipId=el.dataset.clipId;
           const clip=TimelineUI.clips.find(c=>c.id===clipId);
           if(!clip) return;
@@ -134,8 +128,7 @@ const TimelineUI = {
       }
       if(rightHandle){
         rightHandle.addEventListener('pointerdown', (e)=>{
-          e.stopPropagation();
-          e.preventDefault();
+          e.stopPropagation(); e.preventDefault();
           const startX=e.clientX;
           const clipId=el.dataset.clipId;
           const clip=TimelineUI.clips.find(c=>c.id===clipId);
@@ -152,13 +145,7 @@ const TimelineUI = {
         });
       }
     });
-    
-    this.container.addEventListener('click', (e)=>{
-      if(e.target===this.container || e.target.classList.contains('track-content') || e.target.classList.contains('track-row') || e.target.classList.contains('track-label')){
-        if(window.Selection) Selection.deselectAll();
-      }
-    });
   }
 };
-window.TimelineUI=TimelineUI;
+window.TimelineUI = TimelineUI;
 setTimeout(()=>{ if(!TimelineUI.container) TimelineUI.init('timelineArea'); }, 400);
