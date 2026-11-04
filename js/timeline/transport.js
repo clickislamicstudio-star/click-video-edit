@@ -1,8 +1,6 @@
 
 /**
- * Folder: js/timeline/ File: transport.js v3.7 NEW
- * Transport Bar - Screenshot Order: Play/Pause + Fullscreen | Undo/Redo
- * Second Row: Jump Start | Frame Back | Cur Time 00:01^23 | Total 10:24 | Frame Forward | Jump End | Ruler + Blue Line
+ * Folder: js/timeline/ File: transport.js v3.8 - Fixed Play/Pause + No Autoplay
  */
 const Transport = {
   currentTime:0,
@@ -11,14 +9,13 @@ const Transport = {
   fps:30,
   pps:80,
   init(){
-    console.log('Transport v3.7 init - Screenshot order');
+    console.log('Transport v3.8 - Fixed - No Autoplay - Screenshot Order');
     this.playheadLine=document.getElementById('playheadLine');
     this.rulerWrap=document.getElementById('rulerCanvasWrap');
     this.rulerCanvas=document.getElementById('rulerCanvas');
     this.curTimeEl=document.getElementById('curTime');
     this.totalTimeEl=document.getElementById('totalTime');
     
-    // Bind buttons - Screenshot order
     document.getElementById('btnPlayPause')?.addEventListener('click', ()=> this.togglePlay());
     document.getElementById('btnFullscreen')?.addEventListener('click', ()=> this.toggleFullscreen());
     document.getElementById('btnUndo')?.addEventListener('click', ()=> this.undo());
@@ -28,7 +25,6 @@ const Transport = {
     document.getElementById('btnFrameBack')?.addEventListener('click', ()=> this.frameBack());
     document.getElementById('btnFrameForward')?.addEventListener('click', ()=> this.frameForward());
     
-    // Ruler drag
     this.rulerWrap?.addEventListener('scroll', ()=> this.syncPlayhead());
     this.rulerWrap?.addEventListener('click', (e)=> this.seekFromClick(e));
     
@@ -40,9 +36,10 @@ const Transport = {
       EventBus.on(EventBus.EVENTS.TIMELINE_ZOOM, (d)=>{ this.pps=d.pps; this.renderRuler(); this.syncPlayhead(); });
     }
     
-    // Keyboard
     document.addEventListener('keydown', (e)=>{
       if(e.code==='Space'){ e.preventDefault(); this.togglePlay(); }
+      if(e.code==='ArrowLeft'){ e.preventDefault(); this.frameBack(); }
+      if(e.code==='ArrowRight'){ e.preventDefault(); this.frameForward(); }
     });
   },
   togglePlay(){
@@ -50,17 +47,26 @@ const Transport = {
     const btn=document.getElementById('btnPlayPause');
     if(btn) btn.textContent = this.isPlaying ? '⏸' : '▶';
     const video=document.getElementById('realVideo');
+    const status=document.getElementById('status');
     if(video){
-      if(this.isPlaying){ video.play().catch(()=>{}); this.startTick(); }
-      else { video.pause(); this.stopTick(); }
+      if(this.isPlaying){ 
+        video.play().catch(()=>{}); 
+        this.startTick(); 
+        if(status) status.textContent='Playing - '+ (window.Selection?.selectedClip?.name||'Video');
+      } else { 
+        video.pause(); 
+        this.stopTick(); 
+        if(status) status.textContent='Paused - Tap Play to continue';
+      }
     }
     EventBus.emit(EventBus.EVENTS.PLAY_PAUSE,{playing:this.isPlaying});
+    if(window.AndroidBridge) AndroidBridge.vibrate(30);
   },
   startTick(){
     this.stopTick();
     this.tickInterval=setInterval(()=>{
       this.currentTime+=1/this.fps;
-      if(this.currentTime>=this.totalDuration) this.currentTime=0;
+      if(this.currentTime>=this.totalDuration){ this.currentTime=this.totalDuration; this.isPlaying=false; const btn=document.getElementById('btnPlayPause'); if(btn) btn.textContent='▶'; this.stopTick(); return; }
       this.updateTime();
       this.syncPlayhead();
       EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime});
@@ -72,26 +78,27 @@ const Transport = {
     if(!document.fullscreenElement){ area?.requestFullscreen().catch(()=>{}); }
     else { document.exitFullscreen().catch(()=>{}); }
   },
-  undo(){ console.log('Undo - Coming soon'); },
-  redo(){ console.log('Redo - Coming soon'); },
-  jumpStart(){ this.currentTime=0; this.updateTime(); this.syncPlayhead(); },
-  jumpEnd(){ this.currentTime=this.totalDuration; this.updateTime(); this.syncPlayhead(); },
-  frameBack(){ this.currentTime=Math.max(0, this.currentTime-1/this.fps); this.updateTime(); this.syncPlayhead(); },
-  frameForward(){ this.currentTime=Math.min(this.totalDuration, this.currentTime+1/this.fps); this.updateTime(); this.syncPlayhead(); },
+  undo(){ if(window.Store && Store.undo) Store.undo(); console.log('Undo'); },
+  redo(){ if(window.Store && Store.redo) Store.redo(); console.log('Redo'); },
+  jumpStart(){ this.currentTime=0; this.updateTime(); this.syncPlayhead(); EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime}); },
+  jumpEnd(){ this.currentTime=this.totalDuration; this.updateTime(); this.syncPlayhead(); EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime}); },
+  frameBack(){ this.currentTime=Math.max(0, this.currentTime-1/this.fps); this.updateTime(); this.syncPlayhead(); EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime}); },
+  frameForward(){ this.currentTime=Math.min(this.totalDuration, this.currentTime+1/this.fps); this.updateTime(); this.syncPlayhead(); EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime}); },
   seekFromClick(e){
     const rect=this.rulerWrap.getBoundingClientRect();
     const x=e.clientX-rect.left+this.rulerWrap.scrollLeft;
     this.currentTime = x/this.pps;
     this.updateTime();
     this.syncPlayhead();
+    EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime});
   },
   renderRuler(){
     if(!this.rulerCanvas) return;
     const pps=this.pps||80;
     let html='';
-    const totalSecs = Math.max(this.totalDuration, 30);
+    const totalSecs = Math.max(this.totalDuration, 60);
     for(let i=0;i<totalSecs;i++){
-      html+=`<div class="rulerMark" style="left:${i*pps}px;width:${pps}px">${i===0?0:''}${i%5===0?'00:'+String(i).padStart(2,'0'):''}</div>`;
+      html+=`<div style="position:absolute;left:${i*pps}px;top:0;bottom:0;border-left:1px solid ${i%5===0?'#444':'#2A2A2A'};padding-left:3px;font-size:9px;color:${i%5===0?'#AAA':'#555'};min-width:${pps}px;display:flex;align-items:center">${i%5===0?'00:'+String(i).padStart(2,'0'):''}</div>`;
     }
     this.rulerCanvas.innerHTML=html;
     this.rulerCanvas.style.minWidth = (totalSecs*pps)+'px';
@@ -111,16 +118,11 @@ const Transport = {
   },
   syncPlayhead(){
     if(!this.playheadLine) return;
-    // Playhead position: left offset = Jump buttons width (44*2 + 64*2) + currentTime*pps - scrollLeft
-    const baseOffset = 44+44+64+64; // 216px approx for buttons
+    const baseOffset = 44+44+64+64;
     const pps=this.pps||80;
     const scroll = this.rulerWrap ? this.rulerWrap.scrollLeft : 0;
     const x = baseOffset + (this.currentTime*pps) - scroll;
     this.playheadLine.style.left = x+'px';
-    // Sync timeline scroll
-    if(window.TimelineUI && TimelineUI.container){
-      // Optional: sync horizontal scroll
-    }
   }
 };
 window.Transport=Transport;
