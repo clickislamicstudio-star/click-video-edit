@@ -1,44 +1,60 @@
 
 /**
- * Folder: js/tools/ File: toolbar.js v3.7 - Contextual Toolbar Dynamic + EN/AR
+ * Folder: js/tools/ File: toolbar.js v3.8 - Pro Order + Transform format
  */
 const Toolbar = {
-  init(){ this.bar=document.getElementById('contextualToolbar'); console.log('Toolbar v3.7 init'); },
+  init(){ this.bar=document.getElementById('contextualToolbar'); console.log('Toolbar v3.8 Pro Order'); },
   showForClip(clip){
     if(!this.bar) this.bar=document.getElementById('contextualToolbar');
     if(!this.bar || !clip) return;
     
     let tools=[];
-    if(clip.type==='video' || clip.type==='image' || clip.type==='overlay'){
+    if(clip.type==='video' || clip.type==='image'){
+      tools=[
+        {id:'fromStart', label:'From the Start', icon:'trim'},
+        {id:'fromNow', label:'From Now', icon:'split'},
+        {id:'split', label:'Split', icon:'split', active:true},
+        {id:'untilNow', label:'Until Now', icon:'trim'},
+        {id:'untilEnd', label:'Until the End', icon:'trim'},
+        {id:'delete', label:'Delete', icon:'delete', danger:true},
+        {id:'transform', label:'Transform', icon:'transform'},
+        {id:'layout', label:'Layout', icon:'filter'},
+        {id:'background', label:'Background', icon:'filter'},
+        {id:'borders', label:'Borders', icon:'filter'}
+      ];
+    } else if(clip.type==='pip' || clip.type==='overlay'){
       tools=[
         {id:'transform', label:'Transform', icon:'transform', active:true},
-        {id:'trim', label:'Trim', icon:'trim'},
-        {id:'split', label:'Split', icon:'split'},
-        {id:'crop', label:'Crop', icon:'crop'},
-        {id:'speed', label:'Speed', icon:'speed'},
-        {id:'volume', label:'Volume', icon:'volume'},
-        {id:'filter', label:'Filter', icon:'filter'},
+        {id:'layout', label:'Layout', icon:'filter'},
+        {id:'background', label:'Background', icon:'filter'},
+        {id:'borders', label:'Borders', icon:'filter'},
         {id:'delete', label:'Delete', icon:'delete', danger:true}
       ];
     } else if(clip.type==='text'){
       tools=[
-        {id:'font', label:'Font', icon:'font', active:true},
-        {id:'color', label:'Color', icon:'color'},
-        {id:'bg', label:'BG', icon:'bg'},
+        {id:'font', label:'Font', icon:'transform', active:true},
+        {id:'color', label:'Color', icon:'filter'},
+        {id:'bg', label:'BG', icon:'filter'},
         {id:'style', label:'Style', icon:'transform'},
-        {id:'animation', label:'Anim', icon:'animation'},
+        {id:'animation', label:'Anim', icon:'transform'},
         {id:'delete', label:'Delete', icon:'delete', danger:true}
       ];
     } else if(clip.type==='audio'){
       tools=[
-        {id:'volume', label:'Volume', icon:'volume', active:true},
-        {id:'speed', label:'Speed', icon:'speed'},
-        {id:'fade', label:'Fade', icon:'filter'},
-        {id:'delete', label:'Delete', icon:'delete', danger:true}
+        {id:'fromStart', label:'From the Start', icon:'trim'},
+        {id:'fromNow', label:'From Now', icon:'split'},
+        {id:'split', label:'Split', icon:'split', active:true},
+        {id:'untilNow', label:'Until Now', icon:'trim'},
+        {id:'untilEnd', label:'Until the End', icon:'trim'},
+        {id:'delete', label:'Delete', icon:'delete', danger:true},
+        {id:'mute', label:'Mute', icon:'volume'},
+        {id:'volume', label:'Volume', icon:'volume'},
+        {id:'noise', label:'Noise Reduction', icon:'filter'},
+        {id:'fade', label:'Fade', icon:'filter'}
       ];
     }
     
-    this.bar.innerHTML=tools.map(t=>`<button class="tool-item ${t.active?'active':''} ${t.danger?'danger':''}" data-tool="${t.id}">${IconSystem.render(t.icon, t.active, 18)}<span>${t.label}</span></button><div style="width:1px;height:24px;background:#2A2A2E"></div>`).join('') + `<button class="tool-item" id="btnCloseContext" style="margin-left:auto"><span style="font-size:14px">✕</span><span>Close</span></button>`;
+    this.bar.innerHTML=tools.map(t=>`<button class="tool-item ${t.active?'active':''} ${t.danger?'danger':''}" data-tool="${t.id}">${IconSystem.render(t.icon, t.active, 16)}<span>${t.label}</span></button>`).join('') + `<button class="tool-item" id="btnCloseContext" style="margin-left:auto"><span style="font-size:14px">✕</span><span>Close</span></button>`;
     this.bar.classList.add('visible');
     
     tools.forEach(t=>{
@@ -46,21 +62,19 @@ const Toolbar = {
       if(btn) btn.addEventListener('click', ()=> this.handleTool(t.id, clip));
     });
     document.getElementById('btnCloseContext')?.addEventListener('click', ()=> this.hide());
-    
-    // Auto-hide on backdrop tap
-    this.bar.addEventListener('click', (e)=>{ if(e.target===this.bar) this.hide(); });
   },
   handleTool(id, clip){
-    console.log('Toolbar tool', id, clip.type);
+    console.log('Toolbar tool v3.8', id, clip.type);
     if(id==='transform' && window.TransformTool) TransformTool.showTransformPanel(clip);
-    else if(id==='trim' && window.TrimSplitTool) TrimSplitTool.showTrimUI(clip);
     else if(id==='split' && window.TrimSplitTool) TrimSplitTool.splitAtPlayhead(clip);
     else if(id==='font' || id==='color' || id==='bg' || id==='style' || id==='animation'){
       if(window.TextTool) TextTool.showTextEditor(clip);
     }
-    else if(id==='speed' && window.SpeedTool) SpeedTool.showUI(clip);
-    else if(id==='filter' && window.FilterTool) FilterTool.showUI(clip);
-    else if(id==='volume' && window.AudioTool) AudioTool.showVolumeUI(clip);
+    else if(id==='volume' || id==='mute' || id==='noise' || id==='fade'){
+      if(window.AudioTool) AudioTool.showVolumeUI(clip);
+    }
+    else if(id==='fromStart'){ if(window.TimelineUI){ clip.startTime=0; TimelineUI.render(); } }
+    else if(id==='untilEnd'){ if(window.TimelineUI && window.Transport){ clip.duration=Transport.totalDuration-clip.startTime; TimelineUI.render(); } }
     else if(id==='delete'){
       if(window.TimelineUI){ TimelineUI.clips=TimelineUI.clips.filter(c=>c.id!==clip.id); TimelineUI.render(); }
       if(window.Selection) Selection.deselectAll();
@@ -71,7 +85,6 @@ const Toolbar = {
   hide(){
     if(!this.bar) this.bar=document.getElementById('contextualToolbar');
     if(this.bar) this.bar.classList.remove('visible');
-  },
-  renderMain(){ this.hide(); }
+  }
 };
 window.Toolbar=Toolbar;
