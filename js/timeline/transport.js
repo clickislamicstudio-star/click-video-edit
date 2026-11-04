@@ -1,6 +1,6 @@
 
 /**
- * Folder: js/timeline/ File: transport.js v3.8 - Fixed Play/Pause + No Autoplay
+ * Folder: js/timeline/ File: transport.js v3.9 - Blue Line to Toolbar + Video Static Blue Moves
  */
 const Transport = {
   currentTime:0,
@@ -9,12 +9,20 @@ const Transport = {
   fps:30,
   pps:80,
   init(){
-    console.log('Transport v3.8 - Fixed - No Autoplay - Screenshot Order');
+    console.log('Transport v3.9 - Blue to Toolbar - Video Static');
     this.playheadLine=document.getElementById('playheadLine');
     this.rulerWrap=document.getElementById('rulerCanvasWrap');
     this.rulerCanvas=document.getElementById('rulerCanvas');
     this.curTimeEl=document.getElementById('curTime');
     this.totalTimeEl=document.getElementById('totalTime');
+    
+    // Extend blue line from ruler to toolbar bottom - as per user request
+    if(this.playheadLine){
+      this.playheadLine.style.height='calc(100vh - 48px - 42vh + 72px + 84px)';
+      this.playheadLine.style.top='0';
+      this.playheadLine.style.bottom='auto';
+      this.playheadLine.style.zIndex='80';
+    }
     
     document.getElementById('btnPlayPause')?.addEventListener('click', ()=> this.togglePlay());
     document.getElementById('btnFullscreen')?.addEventListener('click', ()=> this.toggleFullscreen());
@@ -46,19 +54,13 @@ const Transport = {
     this.isPlaying=!this.isPlaying;
     const btn=document.getElementById('btnPlayPause');
     if(btn) btn.textContent = this.isPlaying ? '⏸' : '▶';
-    const video=document.getElementById('realVideo');
     const status=document.getElementById('status');
-    if(video){
-      if(this.isPlaying){ 
-        video.play().catch(()=>{}); 
-        this.startTick(); 
-        if(status) status.textContent='Playing - '+ (window.Selection?.selectedClip?.name||'Video');
-      } else { 
-        video.pause(); 
-        this.stopTick(); 
-        if(status) status.textContent='Paused - Tap Play to continue';
-      }
+    if(window.AudioEngine){
+      if(this.isPlaying) AudioEngine.play();
+      else AudioEngine.pause();
     }
+    if(this.isPlaying){ this.startTick(); if(status) status.textContent='Playing - Blue Moves, Video Static'; }
+    else { this.stopTick(); if(status) status.textContent='Paused - Video Static'; }
     EventBus.emit(EventBus.EVENTS.PLAY_PAUSE,{playing:this.isPlaying});
     if(window.AndroidBridge) AndroidBridge.vibrate(30);
   },
@@ -66,7 +68,7 @@ const Transport = {
     this.stopTick();
     this.tickInterval=setInterval(()=>{
       this.currentTime+=1/this.fps;
-      if(this.currentTime>=this.totalDuration){ this.currentTime=this.totalDuration; this.isPlaying=false; const btn=document.getElementById('btnPlayPause'); if(btn) btn.textContent='▶'; this.stopTick(); return; }
+      if(this.currentTime>=this.totalDuration){ this.currentTime=this.totalDuration; this.isPlaying=false; const btn=document.getElementById('btnPlayPause'); if(btn) btn.textContent='▶'; this.stopTick(); EventBus.emit(EventBus.EVENTS.PLAY_PAUSE,{playing:false}); return; }
       this.updateTime();
       this.syncPlayhead();
       EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime});
@@ -78,8 +80,8 @@ const Transport = {
     if(!document.fullscreenElement){ area?.requestFullscreen().catch(()=>{}); }
     else { document.exitFullscreen().catch(()=>{}); }
   },
-  undo(){ if(window.Store && Store.undo) Store.undo(); console.log('Undo'); },
-  redo(){ if(window.Store && Store.redo) Store.redo(); console.log('Redo'); },
+  undo(){ if(window.Store && Store.undo) Store.undo(); },
+  redo(){ if(window.Store && Store.redo) Store.redo(); },
   jumpStart(){ this.currentTime=0; this.updateTime(); this.syncPlayhead(); EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime}); },
   jumpEnd(){ this.currentTime=this.totalDuration; this.updateTime(); this.syncPlayhead(); EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime}); },
   frameBack(){ this.currentTime=Math.max(0, this.currentTime-1/this.fps); this.updateTime(); this.syncPlayhead(); EventBus.emit(EventBus.EVENTS.PLAYHEAD,{time:this.currentTime}); },
