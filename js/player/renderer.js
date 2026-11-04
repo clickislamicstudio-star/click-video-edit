@@ -1,85 +1,78 @@
 
 /**
- * Renderer v3.6.2 - Fixed Video + Text Display - CapCut Style
- * - Video always visible when clip selected
- * - Text overlay forced visible
- * - Transform applied
+ * Renderer v3.6.3 - Player Fixed - Video Always Visible
  */
 const Renderer = {
-  videoEl: null,
-  textEl: null,
-  wrapEl: null,
+  videoEl:null, textEl:null, wrapEl:null, emptyHint:null,
   init(){
-    this.videoEl = document.getElementById('realVideo');
-    this.textEl = document.getElementById('textOverlay');
-    this.wrapEl = document.getElementById('playerWrap');
-    console.log('Renderer v3.6.2 init', !!this.videoEl, !!this.textEl);
+    this.videoEl=document.getElementById('realVideo');
+    this.textEl=document.getElementById('textOverlay');
+    this.wrapEl=document.getElementById('playerWrap');
+    this.emptyHint=document.getElementById('emptyHint');
+    console.log('Renderer v3.6.3 init', !!this.videoEl);
+    if(this.videoEl){
+      this.videoEl.style.display='block';
+      this.videoEl.muted=true;
+      this.videoEl.loop=true;
+      this.videoEl.playsInline=true;
+    }
     if(this.textEl){
       this.textEl.style.display='none';
-      this.textEl.style.position='absolute';
-      this.textEl.style.left='50%';
-      this.textEl.style.top='50%';
-      this.textEl.style.transform='translate(-50%,-50%)';
       this.textEl.style.zIndex='9999';
-      this.textEl.style.pointerEvents='none';
-      this.textEl.style.textAlign='center';
-      this.textEl.style.maxWidth='90%';
     }
-    // Listen for clip selection
     if(window.EventBus){
-      EventBus.on(EventBus.EVENTS.CLIP_SELECTED, (clip)=> this.showClip(clip));
-      EventBus.on(EventBus.EVENTS.CLIP_DESELECTED, ()=> this._hide());
+      EventBus.on(EventBus.EVENTS.CLIP_SELECTED, (clip)=> {
+        const real = clip.clip || clip;
+        if(real && real.id){
+          const found = window.TimelineUI ? TimelineUI.clips.find(c=>c.id===real.id) : null;
+          this.showClip(found || real);
+        }
+      });
+      EventBus.on(EventBus.EVENTS.CLIP_DESELECTED, ()=> this._hideTextOnly());
     }
   },
   showClip(clip){
     if(!clip) return;
-    console.log('Renderer showClip', clip.type, clip.name);
-    if(clip.type==='video' || clip.type==='image' || !clip.type){
+    console.log('Renderer showClip FIXED', clip.type, clip.name, !!clip.src);
+    if(this.emptyHint) this.emptyHint.style.display='none';
+    document.getElementById('status').textContent = 'Selected: '+clip.name;
+    
+    if(clip.type==='video' || clip.type==='image' || clip.type==='overlay' || clip.type==='pip'){
       this.showVideo(clip);
     } else if(clip.type==='text'){
       this.showText(clip);
+      // Also keep video visible underneath
+      const videoClip = window.TimelineUI ? TimelineUI.clips.find(c=> (c.type==='video'||c.type==='image') && c.startTime <= clip.startTime && c.startTime+c.duration >= clip.startTime) : null;
+      if(videoClip) this.showVideo(videoClip, true);
+    } else if(clip.type==='audio'){
+      this.showAudio(clip);
     }
-    // Hide import btn when any clip exists
-    const btn=document.getElementById('importBtn');
-    if(btn) btn.classList.add('hidden');
   },
-  showVideo(clip){
+  showVideo(clip, isBackground=false){
     if(!this.videoEl) this.videoEl=document.getElementById('realVideo');
     if(!this.videoEl) return;
     if(clip.src){
-      if(this.videoEl.src !== clip.src){
+      if(this.videoEl.src !== clip.src && !isBackground){
         this.videoEl.src = clip.src;
         this.videoEl.load();
+        this.videoEl.play().catch(()=>{});
+      } else if(!isBackground && this.videoEl.paused){
+        this.videoEl.play().catch(()=>{});
       }
       this.videoEl.style.display='block';
-      this.videoEl.style.width='100%';
-      this.videoEl.style.height='100%';
-      this.videoEl.style.objectFit='contain';
-      // Auto play preview
-      this.videoEl.currentTime = 0;
-      this.videoEl.play().catch(()=>{});
-      // Apply transform if any
-      if(clip.transform){
+      this.videoEl.style.opacity='1';
+      // Apply transform
+      if(clip.transform && !isBackground){
         const t=clip.transform;
-        let tr=` translate(${t.x*5}px, ${t.y*5}px) rotate(${t.rotation||0}deg) scale(${t.scale||1})`;
+        let tr=` translate(${t.x*3}px, ${t.y*3}px) rotate(${t.rotation||0}deg) scale(${t.scale||1})`;
         if(t.flipX) tr+=' scaleX(-1)';
         if(t.flipY) tr+=' scaleY(-1)';
         this.videoEl.style.transform = tr;
         this.videoEl.style.clipPath = (t.cropLeft||t.cropRight||t.cropTop||t.cropBottom) ? `inset(${t.cropTop||0}% ${t.cropRight||0}% ${t.cropBottom||0}% ${t.cropLeft||0}%)` : 'none';
       }
     } else {
-      // No src but clip exists - show placeholder color
+      // No src - show black with name
       this.videoEl.style.display='block';
-      this.videoEl.style.background='#111';
-    }
-    // Hide text if showing video
-    if(clip.type!=='text' && this.textEl){
-      // Keep text hidden if not text clip, unless other text clips overlap? For now hide
-      // Don't hide if there's a text clip at same time - but simple logic: hide
-      if(window.TimelineUI){
-        const hasTextAtPlayhead = TimelineUI.clips.some(c=>c.type==='text' && c.startTime <= (window.Player?.currentTime||0) && c.startTime+c.duration >= (window.Player?.currentTime||0));
-        if(!hasTextAtPlayhead) this.textEl.style.display='none';
-      }
     }
   },
   showText(clip){
@@ -88,24 +81,16 @@ const Renderer = {
     this.textEl.style.display='block';
     this.textEl.style.zIndex='9999';
     this.textEl.textContent = clip.text || clip.name || 'Text';
-    this.textEl.style.fontSize = (clip.fontSize||36)+'px';
-    this.textEl.style.color = clip.fontColor||'#FFFFFF';
+    this.textEl.style.fontSize = (clip.fontSize||32)+'px';
+    this.textEl.style.color = clip.fontColor||'#FFF';
     this.textEl.style.fontFamily = clip.fontFamily||'Inter';
-    this.textEl.style.left='50%';
-    this.textEl.style.top= clip.transform ? '50%' : '50%';
-    // Handle background
-    if(clip.bgColor && clip.bgColor!=='transparent'){
-      this.textEl.style.background=clip.bgColor;
-      this.textEl.style.padding='6px 14px';
-      this.textEl.style.borderRadius='8px';
-    } else {
-      this.textEl.style.background='transparent';
-      this.textEl.style.padding='0';
-    }
-    // Transform
+    this.textEl.style.fontWeight='600';
+    this.textEl.style.background = clip.bgColor && clip.bgColor!=='transparent' ? clip.bgColor : 'transparent';
+    this.textEl.style.padding = clip.bgColor && clip.bgColor!=='transparent' ? '6px 14px' : '0';
+    this.textEl.style.borderRadius='8px';
     if(clip.transform){
       const t=clip.transform;
-      let tr=`translate(-50%,-50%) translate(${t.x*5}px, ${t.y*5}px) rotate(${t.rotation||0}deg) scale(${t.scale||1})`;
+      let tr=`translate(-50%,-50%) translate(${t.x*3}px, ${t.y*3}px) rotate(${t.rotation||0}deg) scale(${t.scale||1})`;
       if(t.flipX) tr+=' scaleX(-1)';
       if(t.flipY) tr+=' scaleY(-1)';
       this.textEl.style.transform=tr;
@@ -113,22 +98,30 @@ const Renderer = {
     } else {
       this.textEl.style.transform='translate(-50%,-50%)';
     }
-    // Show video underneath if exists
-    if(this.videoEl && this.videoEl.src){
-      this.videoEl.style.display='block';
+  },
+  showAudio(clip){
+    // For audio, keep video visible but show audio indicator
+    if(this.textEl){
+      this.textEl.style.display='block';
+      this.textEl.textContent='🔊 '+ (clip.name||'Audio');
+      this.textEl.style.fontSize='18px';
+      this.textEl.style.color='#4CAF50';
+      this.textEl.style.background='rgba(76,175,80,0.2)';
+      this.textEl.style.padding='8px 16px';
+      this.textEl.style.borderRadius='20px';
+      this.textEl.style.transform='translate(-50%,-50%)';
     }
-    // Force visible even when editor open
-    this.textEl.style.opacity='1';
-    this.textEl.style.visibility='visible';
+    // Keep video underneath
+    const videoClip = window.TimelineUI ? TimelineUI.clips.find(c=> c.type==='video'||c.type==='image') : null;
+    if(videoClip) this.showVideo(videoClip, true);
+  },
+  _hideTextOnly(){
+    if(this.textEl) this.textEl.style.display='none';
   },
   _hide(){
-    // Don't hide video completely, keep last frame
     if(this.textEl) this.textEl.style.display='none';
-  },
-  _hideAll(){
-    if(this.videoEl) this.videoEl.style.display='none';
-    if(this.textEl) this.textEl.style.display='none';
+    // Don't hide video - keep last frame
   }
 };
 window.Renderer=Renderer;
-setTimeout(()=>Renderer.init(), 500);
+setTimeout(()=>Renderer.init(), 300);
