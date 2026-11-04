@@ -1,10 +1,10 @@
 
 /**
- * Folder: js/timeline/ File: gesture.js v3.9 - Pinch Zoom Fixed - Zoom Engine Restore
+ * Folder: js/timeline/ File: gesture.js v3.9 FINAL - Pinch Zoom 5-300 - No Emoji
  */
 const GestureTool={
   init(){
-    console.log('GestureTool v3.9 - Pinch Zoom 5-300px/s');
+    console.log('GestureTool v3.9 FINAL - Pinch Zoom 5-300px/s - No Emoji');
     this.container=document.getElementById('timelineArea');
     if(!this.container) return;
     let startDist=0;
