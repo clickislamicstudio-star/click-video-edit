@@ -1,6 +1,7 @@
 
 /**
- * MediaImportTool v3.6.3 - Fixed - No Canvas Button
+ * Folder: js/tools/ File: media-import.js v3.7
+ * V1 = Video+Image same track (Professional) + Audio Fix + No Canvas Button
  */
 const MediaImportTool = {
   async importToTimeline(file){
@@ -26,25 +27,26 @@ const MediaImportTool = {
       duration = await new Promise(r=>{
         const v=document.createElement('video');
         v.preload='metadata';
-        v.onloadedmetadata=()=>{ const d=v.duration||3; r(d); };
-        v.onerror=()=>r(3);
+        v.onloadedmetadata=()=>{ const d=v.duration||3; r(Math.min(d, 30)); };
+        v.onerror=()=>r(5);
         v.src=url;
       });
-      duration = Math.min(duration, 20);
     } else if(isAudio){
       duration = await new Promise(r=>{
         const a=document.createElement('audio');
         a.preload='metadata';
-        a.onloadedmetadata=()=>r(a.duration||5);
+        a.onloadedmetadata=()=>r(a.duration||6);
         a.onerror=()=>r(5);
         a.src=url;
       });
+    } else if(isImage){
+      duration = 3; // Photo default 3 sec
     }
     
     let track = 1;
     let type = 'video';
     let color = '#FF3B30';
-    if(isImage){ track=2; type='image'; color='#FF9500'; }
+    if(isImage){ track=1; type='image'; color='#FF9500'; } // V1 same as video - Professional
     if(isAudio){ track=5; type='audio'; color='#4CAF50'; }
     
     const clipData = {
@@ -75,9 +77,9 @@ const MediaImportTool = {
     const hint=document.getElementById('emptyHint');
     if(hint) hint.style.display='none';
     const status=document.getElementById('status');
-    if(status) status.textContent='Imported: '+f.name;
+    if(status) status.textContent='Imported: '+f.name+' -> V'+track+' ('+type+')';
     
-    if(window.AndroidBridge && AndroidBridge.vibrate) AndroidBridge.vibrate(50);
+    if(window.AndroidBridge && AndroidBridge.vibrate) AndroidBridge.vibrate(40);
     
     return [clip];
   }
