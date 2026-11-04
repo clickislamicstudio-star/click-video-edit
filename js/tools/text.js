@@ -119,7 +119,7 @@ const TextTool = {
       // BOTTOM SHEET FIX: Only 42% height, rest video visible, backdrop almost transparent
       modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:300;display:flex;flex-direction:column;pointer-events:none';
       modal.innerHTML=`
-        <div id="textModalBackdrop" style="flex:1;background:rgba(0,0,0,0.08);pointer-events:auto;backdrop-filter:blur(1px)"></div>
+        <div id="textModalBackdrop" style="flex:1;background:transparent;pointer-events:auto"></div>
         <div id="textModalContent" style="background:#1A1A1E;border-radius:22px 22px 0 0;max-height:44vh;min-height:38vh;display:flex;flex-direction:column;pointer-events:auto;border-top:1.5px solid rgba(88,86,214,0.6);box-shadow:0 -8px 32px rgba(0,0,0,0.7);transform:translateY(0);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)"></div>
       `;
       document.body.appendChild(modal);
