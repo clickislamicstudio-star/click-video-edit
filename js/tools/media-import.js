@@ -1,20 +1,9 @@
 
 /**
- * Folder: js/tools/ File: media-import.js v3.8 - Permission + No Autoplay + Pro Order + Waveform
+ * Folder: js/tools/ File: media-import.js v3.9 - Permission Once + Audio Fix + Outside Handles + PIP No Black
  */
 const MediaImportTool = {
-  async requestPermission(){
-    // Google Play permission handling - File access
-    try{
-      if(navigator.permissions && navigator.permissions.query){
-        const result = await navigator.permissions.query({name:'clipboard-read'});
-        // For file system, we use file picker which triggers permission UI
-      }
-    }catch(e){ console.log('Permission check not supported, using file picker'); }
-    return true;
-  },
   async generateWaveform(file){
-    // Generate fake waveform for now - real WebAudio for audio files
     try{
       if(file.type.startsWith('audio')){
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -32,14 +21,12 @@ const MediaImportTool = {
         return waveform;
       }
     }catch(e){ console.log('Waveform gen failed', e); }
-    // Fallback random
     return Array.from({length:40}).map(()=> 10+Math.random()*80);
   },
   async importToTimeline(typeHint){
-    const hasPermission = await this.requestPermission();
-    if(!hasPermission){
-      alert('Permission denied - Please allow file access in settings');
-      return [];
+    // Permission Once logic
+    if(!PermissionManager.hasFilePermission()){
+      console.log('First time - File permission will be requested via file picker');
     }
     
     let accept = 'video/*,image/*,audio/*';
@@ -55,6 +42,8 @@ const MediaImportTool = {
     });
     
     if(!f) return [];
+    
+    PermissionManager.markFileGranted();
     
     const url = URL.createObjectURL(f);
     const isVideo = f.type.startsWith('video');
@@ -84,10 +73,9 @@ const MediaImportTool = {
     let type = 'video';
     let color = '#FF3B30';
     if(isImage){ track=1; type='image'; color='#FF9500'; }
-    if(isAudio){ track=2; type='audio'; color='#4A4A4E'; }
+    if(isAudio){ track=2; type='audio'; color='#2C2C2E'; }
     if(typeHint==='pip'){ track=4; type=isImage?'image':'pip'; color='#5AC8FA'; }
     
-    // PIP check - only when video exists
     if(track===4){
       const hasVideo = window.TimelineUI && TimelineUI.clips.some(c=> c.type==='video'||c.type==='image');
       if(!hasVideo){
@@ -124,10 +112,14 @@ const MediaImportTool = {
       Renderer.showClip(clip);
     }
     
+    if(window.AudioEngine && (isAudio || isVideo)){
+      AudioEngine.loadClip(clip);
+    }
+    
     const hint=document.getElementById('emptyHint');
     if(hint) hint.style.display='none';
     const status=document.getElementById('status');
-    if(status) status.textContent='Imported: '+f.name+' -> '+ (track===1?'Media':track===2?'Audio':track===3?'Text':'PIP') +' - Paused - Tap Play';
+    if(status) status.textContent='Imported: '+f.name+' -> '+(track===1?'Media':track===2?'Audio':track===3?'Text':'PIP')+' - Paused - Audio Ready - Permission Once';
     
     if(window.AndroidBridge && AndroidBridge.vibrate) AndroidBridge.vibrate(40);
     
