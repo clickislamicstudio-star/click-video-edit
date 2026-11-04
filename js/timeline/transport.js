@@ -1,6 +1,6 @@
 
 /**
- * Folder: js/timeline/ File: transport.js v3.9 - Blue Line to Toolbar + Video Static Blue Moves
+ * Folder: js/timeline/ File: transport.js v3.9 FINAL - Blue Line to Toolbar + Video Static Blue Moves + No Emoji
  */
 const Transport = {
   currentTime:0,
@@ -9,19 +9,21 @@ const Transport = {
   fps:30,
   pps:80,
   init(){
-    console.log('Transport v3.9 - Blue to Toolbar - Video Static');
+    console.log('Transport v3.9 FINAL - Blue to Toolbar - Video Static - No Emoji');
     this.playheadLine=document.getElementById('playheadLine');
     this.rulerWrap=document.getElementById('rulerCanvasWrap');
     this.rulerCanvas=document.getElementById('rulerCanvas');
     this.curTimeEl=document.getElementById('curTime');
     this.totalTimeEl=document.getElementById('totalTime');
     
-    // Extend blue line from ruler to toolbar bottom - as per user request
     if(this.playheadLine){
       this.playheadLine.style.height='calc(100vh - 48px - 42vh + 72px + 84px)';
       this.playheadLine.style.top='0';
       this.playheadLine.style.bottom='auto';
       this.playheadLine.style.zIndex='80';
+      this.playheadLine.style.background='#0A84FF';
+      this.playheadLine.style.width='2px';
+      this.playheadLine.style.boxShadow='0 0 6px rgba(10,132,255,0.6)';
     }
     
     document.getElementById('btnPlayPause')?.addEventListener('click', ()=> this.togglePlay());
@@ -54,13 +56,12 @@ const Transport = {
     this.isPlaying=!this.isPlaying;
     const btn=document.getElementById('btnPlayPause');
     if(btn) btn.textContent = this.isPlaying ? '⏸' : '▶';
-    const status=document.getElementById('status');
     if(window.AudioEngine){
       if(this.isPlaying) AudioEngine.play();
       else AudioEngine.pause();
     }
-    if(this.isPlaying){ this.startTick(); if(status) status.textContent='Playing - Blue Moves, Video Static'; }
-    else { this.stopTick(); if(status) status.textContent='Paused - Video Static'; }
+    if(this.isPlaying){ this.startTick(); }
+    else { this.stopTick(); }
     EventBus.emit(EventBus.EVENTS.PLAY_PAUSE,{playing:this.isPlaying});
     if(window.AndroidBridge) AndroidBridge.vibrate(30);
   },
