@@ -1,20 +1,16 @@
 
 /**
- * MediaImportTool v3.6.2 - Fixed Import + Player Display
+ * MediaImportTool v3.6.3 - Fixed - No Canvas Button
  */
 const MediaImportTool = {
   async importToTimeline(file){
     let f=file;
     if(!f){
-      // Create input
       f = await new Promise(res=>{
         const inp=document.createElement('input');
         inp.type='file';
-        inp.accept='video/*,image/*';
-        inp.onchange=e=>{
-          const file=e.target.files[0];
-          res(file);
-        };
+        inp.accept='video/*,image/*,audio/*';
+        inp.onchange=e=>{ const file=e.target.files[0]; res(file); };
         inp.click();
       });
     }
@@ -23,29 +19,43 @@ const MediaImportTool = {
     const url = URL.createObjectURL(f);
     const isVideo = f.type.startsWith('video');
     const isImage = f.type.startsWith('image');
+    const isAudio = f.type.startsWith('audio');
     
-    // Get duration
     let duration = 3;
     if(isVideo){
       duration = await new Promise(r=>{
         const v=document.createElement('video');
         v.preload='metadata';
-        v.onloadedmetadata=()=>{ r(v.duration||3); URL.revokeObjectURL(v.src); };
+        v.onloadedmetadata=()=>{ const d=v.duration||3; r(d); };
         v.onerror=()=>r(3);
         v.src=url;
       });
-      duration = Math.min(duration, 15);
+      duration = Math.min(duration, 20);
+    } else if(isAudio){
+      duration = await new Promise(r=>{
+        const a=document.createElement('audio');
+        a.preload='metadata';
+        a.onloadedmetadata=()=>r(a.duration||5);
+        a.onerror=()=>r(5);
+        a.src=url;
+      });
     }
     
+    let track = 1;
+    let type = 'video';
+    let color = '#FF3B30';
+    if(isImage){ track=2; type='image'; color='#FF9500'; }
+    if(isAudio){ track=5; type='audio'; color='#4CAF50'; }
+    
     const clipData = {
-      id:'clip_'+Date.now(),
-      name: f.name || 'VID-'+Date.now(),
-      type: isImage ? 'image' : 'video',
-      track: 1,
-      startTime: window.TimelineUI ? TimelineUI.getNextStartTime(1) : 0,
+      id: (type+'_'+Date.now()),
+      name: f.name || (type+'_'+Date.now()),
+      type: type,
+      track: track,
+      startTime: window.TimelineUI ? TimelineUI.getNextStartTime(track) : 0,
       duration: duration,
       src: url,
-      color: '#FF3B30',
+      color: color,
       transform:{x:0,y:0,scale:1,rotation:0,flipX:false,flipY:false,cropLeft:0,cropRight:0,cropTop:0,cropBottom:0}
     };
     
@@ -54,21 +64,16 @@ const MediaImportTool = {
     if(window.TimelineUI){
       TimelineUI.clips.push(clip);
       TimelineUI.render();
-      // Auto select new clip
       if(window.Selection) Selection.selectClip(clip);
-      if(window.Store) Store.dispatch({type:'SELECT_CLIP', payload:{id:clip.id, track:clip.track, clipType:clip.type, name:clip.name}});
+      if(window.Store) Store.dispatch({type:'SELECT_CLIP', payload:{id:clip.id, track:clip.track, clipType:clip.type, name:clip.name, clip:clip}});
     }
     
-    // Show in player immediately
     if(window.Renderer){
       Renderer.showClip(clip);
-    } else {
-      const v=document.getElementById('realVideo');
-      if(v){ v.src=url; v.style.display='block'; v.play().catch(()=>{}); }
     }
     
-    const btn=document.getElementById('importBtn');
-    if(btn) btn.classList.add('hidden');
+    const hint=document.getElementById('emptyHint');
+    if(hint) hint.style.display='none';
     const status=document.getElementById('status');
     if(status) status.textContent='Imported: '+f.name;
     
