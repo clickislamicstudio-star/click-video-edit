@@ -1,118 +1,99 @@
 /**
- * Folder: js/timeline/ File: zoom-engine.js v2.2 FINAL - Visual Zoom Fix - Base + Current Merged - One Function Fix
- * Base File: js/timeline/zoom-engine.js v2.0 FINAL - 5-300px/s from base file7048266801042578919.txt
- * Current Code Preservation: Keeps Play v3.9.3, Transport SVG, Blue Line to Toolbar, Outside Handles, Permission Once
- * Master Prompt Compliance: Single Source - Timeline Layer - Decoupled - Kotlin WebView ready
- * Fixes Pinch Chain Root:
- * 1. math.js single source not synced
- * 2. timeline-ui.js track-content min-width not set
- * 3. transport ruler min-width not set
+ * js/timeline/zoom-engine.js - v2.3 FINAL - Visual Zoom Fix - Single Source - 5px/s to 300px/s
+ * Professional: 5px/s = Full video in screen, 300px/s = Frame by frame
  */
-
 const ZoomEngine = {
   minPps: 5,
   maxPps: 300,
   defaultPps: 80,
   currentPps: 80,
 
-  init(){
-    console.log('ZoomEngine v2.2 FINAL - Visual Zoom Fix - Single Source - 5 to 300px/s - Master Prompt');
-    this.currentPps = this.defaultPps;
-    if(window.TimelineMath){
-      TimelineMath.config.pixelsPerSecond = this.currentPps;
-    }
-    if(window.TimelineUI){
+  init() {
+    this.currentPps = 80;
+    if(window.TimelineUI) {
       TimelineUI.pixelsPerSecond = this.currentPps;
     }
-    if(window.Transport){
-      Transport.pps = this.currentPps;
-    }
+    console.log('ZoomEngine v2.3 FINAL - Visual Zoom Fix - Single Source - 5 to 300px/s');
   },
 
-  setZoom(pps){
+  // Zoom by scale factor (for pinch)
+  zoomBy(scale) {
+    let newPps = this.currentPps * scale;
+    this.setZoom(newPps);
+  },
+
+  setZoom(pps) {
     pps = Math.max(this.minPps, Math.min(this.maxPps, pps));
     if(Math.abs(pps - this.currentPps) < 0.2) return pps;
     this.currentPps = pps;
-    
-    // Single source - update all layers
-    if(window.TimelineMath){
-      TimelineMath.config.pixelsPerSecond = pps;
-    }
-    if(window.TimelineUI){
+    if(window.TimelineMath) TimelineMath.config.pixelsPerSecond = pps;
+    if(window.TimelineUI) {
       TimelineUI.pixelsPerSecond = pps;
-      if(TimelineUI.setZoom){
-        TimelineUI.setZoom(pps);
-      } else if(TimelineUI.render){
-        TimelineUI.render();
-      }
+      if(TimelineUI.setZoom) TimelineUI.setZoom(pps);
+      else if(TimelineUI.render) TimelineUI.render();
     }
-    if(window.Transport){
+    if(window.Transport) {
       Transport.pps = pps;
       if(Transport.renderRuler) Transport.renderRuler();
       if(Transport.syncPlayhead) Transport.syncPlayhead();
     }
-    if(window.EventBus){
-      try{ EventBus.emit(EventBus.EVENTS.TIMELINE_ZOOM, {pps: pps, zoomLevel: this.getZoomLevel()}); }catch(e){}
-    }
+    if(window.EventBus) try{ EventBus.emit(EventBus.EVENTS.TIMELINE_ZOOM, {pps:pps, zoomLevel:this.getZoomLevel()}); }catch(e){}
     this.updateUI();
+    const status=document.getElementById('status');
+    if(status) status.textContent='Zoom: '+Math.round(pps)+'px/s - Pinch OK! - '+Math.round((pps/80)*100)+'%';
     return pps;
   },
 
-  zoomBy(scale){
-    if(!scale || isNaN(scale)) return;
-    this.setZoom(this.currentPps * scale);
-  },
-
-  setZoomAbsolute(pps){
-    this.setZoom(pps);
-  },
-
-  zoomIn(){
+  zoomIn() {
     this.setZoom(this.currentPps * 1.3);
   },
 
-  zoomOut(){
+  zoomOut() {
     this.setZoom(this.currentPps * 0.7);
   },
 
-  zoomToFit(duration){
-    if(!duration){
-      if(window.Transport) duration = Transport.totalDuration;
-      else duration = 10;
-    }
-    const width = window.innerWidth * 0.7;
+  zoomToFit(duration) {
+    if(!duration || !window.TimelineUI || !TimelineUI.canvas) return;
+    
+    const width = TimelineUI.canvas.width / 2;
+    // Fit whole video in 70% of screen like your 01:02 screenshot
     const targetPps = (width * 0.7) / duration;
     this.setZoom(targetPps);
+    
+    // Center the video
+    if(window.TimelineUI) {
+      const centerOffset = (width/2) / targetPps;
+      TimelineUI.scrollOffset = -centerOffset + 0.15;
+      TimelineUI.render();
+    }
   },
 
-  handlePinch(startDist, currentDist){
-    if(!startDist || startDist===0) return;
-    const scale = currentDist / startDist;
-    this.zoomBy(scale);
-  },
-
-  getZoomLevel(){
+  getZoomLevel() {
     return (this.currentPps / this.defaultPps) * 100;
   },
 
-  getPps(){
+  getPps() {
     return this.currentPps;
   },
 
-  updateUI(){
-    const zoomEl = document.getElementById('zoomLevel');
-    if(zoomEl){
-      zoomEl.textContent = Math.round(this.getZoomLevel()) + '%';
+  updateUI() {
+    const zoomText = document.getElementById('zoomLevel');
+    if(zoomText) {
+      zoomText.textContent = Math.round(this.getZoomLevel()) + '%';
     }
+  },
+
+  // For buttons
+  handlePinch(startDist, currentDist) {
+    const scale = currentDist / startDist;
+    this.zoomBy(scale);
   }
 };
-
 window.ZoomEngine = ZoomEngine;
 
-if(document.readyState === 'loading'){
+// Auto init
+if(document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', ()=>ZoomEngine.init());
 } else {
-  setTimeout(()=>ZoomEngine.init(), 300);
+  setTimeout(()=>ZoomEngine.init(), 200);
 }
-
-console.log('ZoomEngine v2.2 FINAL loaded - Visual Zoom Fix - Base + Current - Single Source - Play Preserved - No Emoji');
