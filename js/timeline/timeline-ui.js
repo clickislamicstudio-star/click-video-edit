@@ -1,218 +1,463 @@
 /**
- * Folder: js/timeline/ File: timeline-ui.js v3.9.1 FINAL - Pinch Visual Zoom Fix - Base + Current Merged - One Function Fix - Master Prompt Compliant
- * Base File Reference: js/timeline/timeline-ui.js v2.0 FINAL Professional CapCut Style from file7048266801042578919.txt
- *   Formula: screenX = (time - scrollOffset) * pps, formatTime MM:SS, drawRuler majorStep/minorStep/labelStep based on pps
- * Current Code Preservation: Keeps Play v3.9.3, Transport SVG, Blue Line to Toolbar, Outside Bottom Handles < >, Permission Once, Audio Fix, No Emoji
- * Master Prompt Compliance: Timeline Layer - Single Source pps via ZoomEngine - Decoupled - Kotlin WebView ready
- * Fixes:
- * 1. Pinch detected (76px/s - Pinch OK!) but red clip not visually zooming because track-content min-width not set to totalDuration*pps
- * 2. Base file had canvas rendering with width/height, current uses div track-content with absolute positioned clips - needs min-width
- * 3. Ensures left = startTime * pps, width = duration * pps, and parent track-content expands
- * 4. Keeps outside bottom handles < > white box as per 4th reference image
+ * js/timeline/timeline-ui.js - v2.0 FINAL - Professional CapCut Style
+ * Fix: MM:SS Format, Zero Repeat Bug, Dot System, 5-300px/s Zoom
+ * Formula: screenX = (time - scrollOffset) * pps
  */
-
 const TimelineUI = {
-  clips:[],
-  pixelsPerSecond:80,
-  container:null,
+  container: null,
+  canvas: null,
+  ctx: null,
+  pixelsPerSecond: 80,
   scrollOffset: -2,
-  trackHeight:45,
-  tracks:['V1','V2','Text','A1','A2'],
+  trackHeight: 45,
+  tracks: ['V1', 'V2', 'Text', 'A1', 'A2'],
+  clips: [],
+  selectedClip: null,
+  isDragging: false,
+  dragType: null,
+  dragStartX: 0,
+  dragStartClip: null,
 
-  init(id){
-    this.container=document.getElementById(id||'timelineArea');
+  init(containerId = 'timelineArea') {
+    this.container = document.getElementById(containerId);
     if(!this.container) return;
-    console.log('TimelineUI v3.9.1 FINAL - Pinch Visual Zoom Fix - Outside Bottom Handles - No Emoji - Master Prompt');
-    if(window.ZoomEngine) this.pixelsPerSecond=ZoomEngine.currentPps;
-    if(window.Transport) this.pixelsPerSecond=Transport.pps;
-    if(window.TimelineMath) this.pixelsPerSecond=TimelineMath.config.pixelsPerSecond;
+
+    this.container.innerHTML = '';
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = this.container.clientWidth * 2;
+    this.canvas.height = (this.tracks.length * this.trackHeight + 30) * 2;
+    this.canvas.style.width = '100%';
+    this.canvas.style.height = (this.tracks.length * this.trackHeight + 30) + 'px';
+    this.canvas.style.cursor = 'grab';
+    this.canvas.style.touchAction = 'none';
+    this.ctx = this.canvas.getContext('2d');
+    this.ctx.scale(2,2);
+
+    this.container.appendChild(this.canvas);
+    
+    const centerOffset = (this.canvas.width/2/2) / this.pixelsPerSecond;
+    this.scrollOffset = -centerOffset + 0.15;
+    
+    this.bindEvents();
     this.render();
+    console.log('TimelineUI v2.0 FINAL Ready - MM:SS Format');
   },
 
-  getNextStartTime(track){
-    let relevant;
-    if(track===1) relevant=this.clips.filter(c=> (c.type==='video'||c.type==='image') && c.track!==4);
-    else if(track===2) relevant=this.clips.filter(c=> c.type==='audio');
-    else if(track===3) relevant=this.clips.filter(c=> c.type==='text');
-    else if(track===4) relevant=this.clips.filter(c=> c.type==='pip'||c.type==='overlay'||c.track===4);
-    else relevant=this.clips.filter(c=>c.track===track);
-    if(!relevant||relevant.length===0) return 0;
-    return Math.max(...relevant.map(c=>c.startTime+c.duration));
-  },
-
-  setZoom(pps){
-    // Called by ZoomEngine - Base file compatibility
-    this.pixelsPerSecond = pps;
-    this.render();
-  },
-
-  timeToPixel(time){
+  timeToPixel(time) {
     return (time - this.scrollOffset) * this.pixelsPerSecond;
   },
 
-  pixelToTime(pixel){
+  pixelToTime(pixel) {
     return (pixel / this.pixelsPerSecond) + this.scrollOffset;
   },
 
-  formatTime(seconds){
+  // Professional Time Format - MM:SS
+  formatTime(seconds) {
     if(seconds < 0) seconds = 0;
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     const ms = Math.floor((seconds % 1) * 100);
-    const mm = mins.toString().padStart(2,'0');
-    const ss = secs.toString().padStart(2,'0');
-    if(this.pixelsPerSecond > 150){
-      const msStr = ms.toString().padStart(2,'0');
+    
+    const mm = mins.toString().padStart(2, '0');
+    const ss = secs.toString().padStart(2, '0');
+    
+    // For zoom in show milliseconds like 00:00^07
+    if(this.pixelsPerSecond > 150) {
+      const msStr = ms.toString().padStart(2, '0');
       return `${mm}:${ss}^${msStr}`;
     }
     return `${mm}:${ss}`;
   },
 
-  addClip(clip){
+  addClip(clip) {
+    if(this.clips.length === 0) {
+      const centerOffset = (this.canvas ? this.canvas.width/2/2 : 180) / this.pixelsPerSecond;
+      this.scrollOffset = -centerOffset + 0.15;
+    }
     this.clips.push(clip);
     this.render();
   },
 
-  clearAll(){
-    this.clips=[];
+  getTrackY(trackName) {
+    const index = this.tracks.indexOf(trackName);
+    return index * this.trackHeight + 20;
+  },
+
+  clearAll() {
+    this.clips = [];
+    this.selectedClip = null;
+    const centerOffset = (this.canvas ? this.canvas.width/2/2 : 180) / this.pixelsPerSecond;
+    this.scrollOffset = -centerOffset + 0.15;
     this.render();
   },
 
-  render(){
-    if(!this.container) this.container=document.getElementById('timelineArea');
-    if(!this.container) return;
-    const pps=this.pixelsPerSecond||80;
-    const maxTime = this.clips.length ? Math.max(...this.clips.map(c=>c.startTime+c.duration)) : 10.4;
-    if(window.Transport){
-      Transport.totalDuration=Math.max(maxTime,10.4);
-      if(Transport.renderRuler) Transport.renderRuler();
-      if(Transport.syncPlayhead) Transport.syncPlayhead();
+  render() {
+    if(!this.ctx || !this.canvas) return;
+    
+    const width = this.canvas.width / 2;
+    const height = this.canvas.height / 2;
+    
+    this.ctx.fillStyle = '#1E1E1E';
+    this.ctx.fillRect(0,0,width,height);
+
+    this.drawRuler();
+
+    this.tracks.forEach((track, i) => {
+      const y = i * this.trackHeight + 20;
+      this.ctx.fillStyle = i % 2 === 0 ? '#2A2A2A' : '#252525';
+      this.ctx.fillRect(0, y, width, this.trackHeight);
+      
+      this.ctx.fillStyle = '#666';
+      this.ctx.font = '10px monospace';
+      this.ctx.fillText(track, 6, y + 14);
+      
+      this.ctx.strokeStyle = '#333';
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, y + this.trackHeight);
+      this.ctx.lineTo(width, y + this.trackHeight);
+      this.ctx.stroke();
+    });
+
+    this.clips.forEach(clip => {
+      const x = this.timeToPixel(clip.startTime);
+      const w = clip.duration * this.pixelsPerSecond;
+      const trackY = this.getTrackY(clip.track || 'V1');
+      
+      if(x + w < -100 || x > width+100) return;
+
+      let color = '#FF3B30';
+      if(clip.track === 'V2') color = '#4CAF50';
+      if(clip.track === 'Text') color = '#2196F3';
+      if(clip.track === 'A1' || clip.track === 'A2') color = '#FF9800';
+
+      this.ctx.fillStyle = color;
+      this.ctx.fillRect(x, trackY+2, w, this.trackHeight-4);
+      
+      if(this.selectedClip && this.selectedClip.id === clip.id) {
+        this.ctx.strokeStyle = '#FFF';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(x, trackY+2, w, this.trackHeight-4);
+      }
+
+      this.ctx.fillStyle = '#FFF';
+      this.ctx.font = '11px sans-serif';
+      const text = (clip.name || 'Video').substring(0, 12);
+      if(w > 50) this.ctx.fillText(text, x+6, trackY+16);
+      
+      this.ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      this.ctx.font = '9px monospace';
+      const durText = this.formatTime(clip.duration);
+      if(w > 40) this.ctx.fillText(durText, x+6, trackY+30);
+
+      this.ctx.fillStyle = '#FFF';
+      this.ctx.fillRect(x, trackY+2, 4, this.trackHeight-4);
+      this.ctx.fillRect(x+w-4, trackY+2, 4, this.trackHeight-4);
+    });
+
+    const centerX = width / 2;
+    this.ctx.fillStyle = '#FF3B30';
+    this.ctx.fillRect(centerX-1, 0, 2, height);
+    this.ctx.beginPath();
+    this.ctx.moveTo(centerX-8, 0);
+    this.ctx.lineTo(centerX+8, 0);
+    this.ctx.lineTo(centerX, 10);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    if(window.MarkersEngine) {
+      MarkersEngine.drawSnapLines(this.ctx, this);
+    }
+  },
+
+  drawRuler() {
+    const width = this.canvas.width / 2;
+    this.ctx.fillStyle = '#111';
+    this.ctx.fillRect(0,0,width,20);
+    
+    const pps = this.pixelsPerSecond;
+    let majorStep, minorStep, labelStep;
+    
+    // Professional Zoom Levels - Like your 01:02 screenshot
+    if(pps < 15) {
+      majorStep = 10; minorStep = 2; labelStep = 10;
+    } else if(pps < 30) {
+      majorStep = 5; minorStep = 1; labelStep = 10;
+    } else if(pps < 60) {
+      majorStep = 2; minorStep = 0.5; labelStep = 5;
+    } else if(pps < 120) {
+      majorStep = 1; minorStep = 0.5; labelStep = 2;
+    } else {
+      majorStep = 0.5; minorStep = 0.1; labelStep = 1;
     }
     
-    // CRITICAL FIX: track-content min-width = total duration * pps - this was missing causing pinch not visually zooming
-    const totalWidth = Math.max(maxTime * pps + 200, (window.innerWidth||360) * 1.5);
+    const startTime = Math.max(0, Math.floor(this.scrollOffset / minorStep) * minorStep);
+    const endTime = Math.ceil((this.scrollOffset + width / pps) / minorStep) * minorStep + 1;
     
-    const tracks=[
-      {id:1,name:'Media',cls:'Media',desc:'video+photo',icon:'M'},
-      {id:2,name:'Audio',cls:'Audio',desc:'BGM',icon:'A'},
-      {id:3,name:'Text',cls:'Text',desc:'auto',icon:'T'},
-      {id:4,name:'PIP',cls:'PIP',desc:'overlay',icon:'P'}
-    ];
+    let lastLabelX = -100;
     
-    let html='<div style="display:flex;flex-direction:column;width:100%;">';
-    
-    tracks.forEach(tr=>{
-      let filtered=[];
-      if(tr.name==='Media'){
-        filtered=this.clips.filter(c=> (c.type==='video'||c.type==='image') && c.track!==4);
-      } else if(tr.name==='Audio'){
-        filtered=this.clips.filter(c=> c.type==='audio');
-      } else if(tr.name==='Text'){
-        filtered=this.clips.filter(c=> c.type==='text');
-      } else if(tr.name==='PIP'){
-        const hasVideo = this.clips.some(c=> c.type==='video'||c.type==='image');
-        if(!hasVideo) filtered=[];
-        else filtered=this.clips.filter(c=> c.type==='pip'||c.type==='overlay'||c.track===4);
-      }
+    for(let t=startTime; t<=endTime; t+=minorStep) {
+      if(t < 0) continue;
+      const x = this.timeToPixel(t);
+      if(x < -10 || x > width+10) continue;
       
-      // FIX: set min-width on track-content so clips can expand when pps increases - this was root cause of pinch not showing
-      html+=`<div class="track-row ${tr.cls}" data-track="${tr.id}"><div class="track-label"><span style="font-size:10px;font-weight:800">${tr.icon}</span><span>${tr.name}</span><span class="type">${tr.desc}</span></div><div class="track-content" data-content-track="${tr.id}" style="min-width:${totalWidth}px;position:relative;height:100%;">`;
+      const isMajor = Math.abs(t % majorStep) < 0.001;
+      const isLabel = Math.abs(t % labelStep) < 0.001;
       
-      filtered.forEach(c=>{
-        const left=c.startTime*pps;
-        const width=Math.max(40, c.duration*pps);
-        const selected = window.Selection && Selection.selectedClip && Selection.selectedClip.id===c.id;
-        let bg='#FF3B30';
-        if(c.type==='image') bg='#FF9500';
-        if(c.type==='pip'||c.type==='overlay') bg='#5AC8FA';
-        if(c.type==='text') bg='#5856D6';
-        if(c.type==='audio') bg='#2C2C2E';
+      if(isLabel) {
+        // Avoid duplicate labels
+        if(Math.abs(x - lastLabelX) < 40) continue;
         
-        let inner='';
-        if(c.type==='audio'){
-          const bars = c.waveform ? c.waveform.map(h=>`<div style="width:2px;height:${h}%;background:${selected?'#FFF':'#0A84FF'};border-radius:1px;opacity:${selected?1:0.9}"></div>`).join('') : Array.from({length: Math.floor(width/4)}).map(()=>`<div style="width:2px;height:${8+Math.random()*80}%;background:${selected?'#FFF':'#0A84FF'};border-radius:1px"></div>`).join('');
-          inner=`<div style="display:flex;align-items:center;gap:3px;height:100%;width:100%"><div style="flex:1;display:flex;align-items:center;gap:1.5px;height:18px;overflow:hidden">${bars}</div><span style="font-size:8px;background:rgba(0,0,0,0.5);padding:1px 4px;border-radius:6px;margin-left:auto">${Math.floor(c.duration)}s</span></div>`;
-        } else {
-          inner=`<div style="display:flex;align-items:center;height:100%;width:100%;position:relative"><div style="width:100%;height:80%;background:linear-gradient(90deg, ${bg}22, ${bg}44);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#FFF;font-weight:600">${c.type==='image'?'IMG':c.type==='pip'?'PIP':c.type==='text'?'TXT':'VID'}</div><span style="position:absolute;top:2px;right:4px;font-size:7px;background:rgba(0,0,0,0.6);padding:1px 3px;border-radius:4px">00:${String(Math.floor(c.duration)).padStart(2,'0')}</span></div>`;
-        }
-        
-        // Outside bottom handles < > white box - as per 4th reference image - Master Prompt
-        const cornerHandle = selected ? `
-          <div data-trim="left" style="position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:20px;height:28px;background:#FFF;border-radius:8px 0 0 8px;display:flex;align-items:center;justify-content:center;color:#000;font-size:14px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.5);cursor:ew-resize;z-index:10;border:1px solid #E5E5EA"><</div>
-          <div data-trim="right" style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:20px;height:28px;background:#FFF;border-radius:0 8px 8px 0;display:flex;align-items:center;justify-content:center;color:#000;font-size:14px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.5);cursor:ew-resize;z-index:10;border:1px solid #E5E5EA">></div>
-        ` : '';
-        
-        html+=`<div data-clip-id="${c.id}" title="${c.name} - Outside bottom handle - Trim drag" style="position:absolute;left:${left}px;width:${width}px;top:4px;bottom:4px;background:${bg};border-radius:6px;display:flex;align-items:center;padding:0 6px;color:#FFF;cursor:pointer;overflow:visible;${selected?'border:2px solid #0A84FF;box-shadow:0 0 0 2px rgba(10,132,255,0.3);z-index:5':''}">${inner}${cornerHandle}</div>`;
-      });
-      
-      if(tr.name==='PIP' && filtered.length===0){
-        const hasVideo = this.clips.some(c=> c.type==='video'||c.type==='image');
-        if(!hasVideo){
-          html+=`<div style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:9px;color:#555">Add video to enable PIP</div>`;
-        }
+        this.ctx.fillStyle = '#666';
+        this.ctx.fillRect(x, 0, 1, 20);
+        this.ctx.fillStyle = '#CCC';
+        this.ctx.font = '10px monospace';
+        this.ctx.fillText(this.formatTime(t), x+3, 12);
+        lastLabelX = x;
+      } else if(isMajor) {
+        this.ctx.fillStyle = '#444';
+        this.ctx.fillRect(x, 8, 1, 12);
+      } else {
+        // Small dots
+        this.ctx.fillStyle = '#2A2A2A';
+        this.ctx.beginPath();
+        this.ctx.arc(x, 14, 1, 0, Math.PI*2);
+        this.ctx.fill();
       }
-      
-      html+='</div></div>';
-    });
+    }
     
-    html+='</div>';
-    this.container.innerHTML=html;
-    
-    // Bind clip selection and trim handles
-    this.container.querySelectorAll('[data-clip-id]').forEach(el=>{
-      el.addEventListener('click', (e)=>{
-        e.stopPropagation();
-        const id=el.dataset.clipId;
-        const clip=this.clips.find(c=>c.id===id);
-        if(clip){
-          if(window.Selection) Selection.selectClip(clip);
-          if(window.AndroidBridge) AndroidBridge.vibrate(30);
-        }
-      });
-      const leftHandle=el.querySelector('[data-trim="left"]');
-      const rightHandle=el.querySelector('[data-trim="right"]');
-      if(leftHandle){
-        leftHandle.addEventListener('pointerdown', (e)=>{
-          e.stopPropagation(); e.preventDefault();
-          const startX=e.clientX;
-          const clipId=el.dataset.clipId;
-          const clip=TimelineUI.clips.find(c=>c.id===clipId);
-          if(!clip) return;
-          const startTime=clip.startTime;
-          const startDuration=clip.duration;
-          const onMove=(ev)=>{
-            const dx=(ev.clientX-startX)/TimelineUI.pixelsPerSecond;
-            const newStart=Math.max(0, startTime+dx);
-            const newDuration=Math.max(0.5, startDuration-dx);
-            if(newDuration>=0.5){ clip.startTime=newStart; clip.duration=newDuration; TimelineUI.render(); }
-          };
-          const onUp=()=>{ document.removeEventListener('pointermove',onMove); document.removeEventListener('pointerup',onUp); };
-          document.addEventListener('pointermove',onMove);
-          document.addEventListener('pointerup',onUp);
-        });
+    // Zoom info
+    this.ctx.fillStyle = '#FF3B30';
+    this.ctx.font = '8px monospace';
+    const zoomPercent = Math.round((pps / 80) * 100);
+    this.ctx.fillText(`${zoomPercent}% ${pps.toFixed(0)}px/s`, width-110, 12);
+  },
+
+  bindPinchEvents() {
+    // Div mode pinch - Ported from canvas bindEvents - this was missing causing pinch dead in div mode
+    const el=this.container;
+    if(!el || el._pinchBoundV23) return;
+    let lastDist=0;
+    this.isPinching=false;
+    this.startDist=0;
+    this.startPps=80;
+    this.lastScale=1;
+    el.addEventListener('touchstart', (e)=>{
+      if(e.touches.length===2){
+        this.isPinching=true;
+        const dx=e.touches[0].clientX - e.touches[1].clientX;
+        const dy=e.touches[0].clientY - e.touches[1].clientY;
+        lastDist=Math.sqrt(dx*dx + dy*dy);
+        this.startDist=lastDist;
+        this.startPps=window.ZoomEngine ? ZoomEngine.currentPps : 80;
+        this.lastScale=1;
+        console.log('PINCH START (TimelineUI v2.3) dist', Math.round(lastDist), 'pps', this.startPps);
+        e.preventDefault();
       }
-      if(rightHandle){
-        rightHandle.addEventListener('pointerdown', (e)=>{
-          e.stopPropagation(); e.preventDefault();
-          const startX=e.clientX;
-          const clipId=el.dataset.clipId;
-          const clip=TimelineUI.clips.find(c=>c.id===clipId);
-          if(!clip) return;
-          const startDuration=clip.duration;
-          const onMove=(ev)=>{
-            const dx=(ev.clientX-startX)/TimelineUI.pixelsPerSecond;
-            const newDuration=Math.max(0.5, startDuration+dx);
-            clip.duration=newDuration; TimelineUI.render();
-          };
-          const onUp=()=>{ document.removeEventListener('pointermove',onMove); document.removeEventListener('pointerup',onUp); };
-          document.addEventListener('pointermove',onMove);
-          document.addEventListener('pointerup',onUp);
-        });
+    }, {passive:false});
+    el.addEventListener('touchmove', (e)=>{
+      if(e.touches.length===2 && this.isPinching){
+        const dx=e.touches[0].clientX - e.touches[1].clientX;
+        const dy=e.touches[0].clientY - e.touches[1].clientY;
+        const curDist=Math.sqrt(dx*dx + dy*dy);
+        const scale=curDist/this.startDist;
+        if(Math.abs(scale-this.lastScale)<0.01){ e.preventDefault(); return; }
+        this.lastScale=scale;
+        console.log('PINCH MOVE (TimelineUI v2.3) scale', scale.toFixed(3), 'newPps', Math.round(this.startPps*scale));
+        if(window.ZoomEngine) ZoomEngine.handlePinch(this.startDist, curDist);
+        e.preventDefault();
+      }
+    }, {passive:false});
+    el.addEventListener('touchend', (e)=>{
+      if(e.touches.length<2){
+        if(this.isPinching) console.log('PINCH END (TimelineUI v2.3) pps', window.ZoomEngine?ZoomEngine.currentPps:0);
+        this.isPinching=false;
+        lastDist=0;
+        this.startDist=0;
       }
     });
+    el._pinchBoundV23=true;
+    console.log('TimelineUI pinch bound Div - Base canvas pinch logic ported - v2.3');
+  },
+  bindEvents() {
+    if(!this.canvas) return;
+    let lastX = 0;
+    let lastDist = 0;
+
+    this.canvas.addEventListener('touchstart', (e) => {
+      if(e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        this.handleStart(x, y);
+        lastX = x;
+      } else if(e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        lastDist = Math.sqrt(dx*dx + dy*dy);
+      }
+    });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      if(e.touches.length === 1) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const deltaX = x - lastX;
+        this.handleMove(deltaX, x);
+        lastX = x;
+      } else if(e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(lastDist > 0) {
+          const scale = dist / lastDist;
+          if(window.ZoomEngine) {
+            ZoomEngine.zoomBy(scale);
+          }
+        }
+        lastDist = dist;
+      }
+    }, {passive: false});
+
+    this.canvas.addEventListener('touchend', (e) => {
+      if(e.touches.length < 2) lastDist = 0;
+      if(e.touches.length === 0) this.handleEnd();
+    });
+
+    this.canvas.addEventListener('mousedown', (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      this.handleStart(e.clientX - rect.left, e.clientY - rect.top);
+      lastX = e.clientX - rect.left;
+      this.isDragging = true;
+    });
+
+    this.canvas.addEventListener('mousemove', (e) => {
+      if(!this.isDragging) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const deltaX = x - lastX;
+      this.handleMove(deltaX, x);
+      lastX = x;
+    });
+
+    this.canvas.addEventListener('mouseup', () => {
+      this.isDragging = false;
+      this.handleEnd();
+    });
+
+    this.canvas.addEventListener('wheel', (e) => {
+      if(e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        if(window.ZoomEngine) ZoomEngine.zoomBy(delta);
+      } else {
+        e.preventDefault();
+        const deltaTime = e.deltaX / this.pixelsPerSecond;
+        this.scrollOffset += deltaTime;
+        if(this.scrollOffset < -5) this.scrollOffset = -5;
+        this.render();
+      }
+    }, {passive: false});
+  },
+
+  handleStart(x, y) {
+    const time = this.pixelToTime(x);
+    const trackIndex = Math.floor((y-20) / this.trackHeight);
+    const trackName = this.tracks[trackIndex];
+    
+    const clickedClip = this.clips.find(c => 
+      c.track === trackName && 
+      time >= c.startTime && time <= c.startTime + c.duration
+    );
+
+    if(clickedClip) {
+      this.selectedClip = clickedClip;
+      const clipX = this.timeToPixel(clickedClip.startTime);
+      const clipW = clickedClip.duration * this.pixelsPerSecond;
+      
+      if(Math.abs(x - clipX) < 12) {
+        this.dragType = 'trim-left';
+      } else if(Math.abs(x - (clipX+clipW)) < 12) {
+        this.dragType = 'trim-right';
+      } else {
+        this.dragType = 'move';
+      }
+      
+      this.dragStartX = x;
+      this.dragStartClip = {...clickedClip};
+      if(navigator.vibrate) navigator.vibrate(30);
+      this.render();
+
+      if(window.Player && clickedClip.type === 'video') {
+        Player.loadClip(clickedClip);
+      }
+    } else {
+      this.selectedClip = null;
+      this.dragType = 'scroll';
+      this.dragStartX = x;
+      
+      if(time >= 0 && window.Player) {
+        Player.seekTo(time);
+      }
+      this.render();
+    }
+  },
+
+  handleMove(deltaX, currentX) {
+    const deltaTime = deltaX / this.pixelsPerSecond;
+
+    if(this.dragType === 'move' && this.selectedClip) {
+      this.selectedClip.startTime = this.dragStartClip.startTime + deltaTime;
+      if(this.selectedClip.startTime < 0) this.selectedClip.startTime = 0;
+      if(window.SnapEngine) {
+        const snapResult = SnapEngine.checkSnap(this.selectedClip, this.clips);
+        if(snapResult && snapResult.snapped) {
+          this.selectedClip.startTime = snapResult.time;
+        }
+      }
+    } else if(this.dragType === 'trim-left' && this.selectedClip) {
+      const newStart = this.dragStartClip.startTime + deltaTime;
+      const newDuration = this.dragStartClip.duration - deltaTime;
+      if(newDuration > 0.2 && newStart >= 0) {
+        this.selectedClip.startTime = newStart;
+        this.selectedClip.duration = newDuration;
+        this.selectedClip.sourceOffset = (this.dragStartClip.sourceOffset || 0) + deltaTime;
+      }
+    } else if(this.dragType === 'trim-right' && this.selectedClip) {
+      const newDuration = this.dragStartClip.duration + deltaTime;
+      if(newDuration > 0.2) {
+        this.selectedClip.duration = newDuration;
+      }
+    } else if(this.dragType === 'scroll') {
+      this.scrollOffset -= deltaTime;
+      if(this.scrollOffset < -10) this.scrollOffset = -10;
+      this.render();
+      return;
+    }
+    this.render();
+  },
+
+  handleEnd() {
+    this.dragType = null;
+    this.dragStartClip = null;
+  },
+
+  setZoom(pps) {
+    const centerTime = this.canvas ? this.pixelToTime(this.canvas.width/2/2) : 0;
+    this.pixelsPerSecond = Math.max(5, Math.min(300, pps));
+    if(this.canvas) {
+      const centerX = this.canvas.width/2/2;
+      this.scrollOffset = centerTime - (centerX / this.pixelsPerSecond);
+    }
+    this.render();
+  },
+
+  syncClips(externalClips) {
+    this.clips = externalClips;
+    this.render();
   }
 };
-
 window.TimelineUI = TimelineUI;
-
-console.log('TimelineUI v3.9.1 FINAL - Pinch Visual Zoom Fix - track-content min-width set - Outside Bottom Handles - No Emoji - Master Prompt');
