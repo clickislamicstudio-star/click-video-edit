@@ -1,119 +1,80 @@
 /**
- * js/timeline/markers.js - Playhead + Snap Markers + Beat Markers
- * Playhead Fixed Center CapCut Style + Snap Lines
+ * js/timeline/gesture.js - Drag, Trim, Pinch, LongPress
  */
-const MarkersEngine = {
-  playheadTime: 0,
-  snapLines: [], // {time, type}
-  beatMarkers: [], // From AudioTool.detectBeats
-  markers: [], // User markers
+const Gesture = {
+  isDragging: false,
+  isPinching: false,
+  startX: 0,
+  startTime: 0,
+  startDist: 0,
+  startPps: 80,
+  lastScale: 1,
 
-  // Playhead - Fixed Center Logic
-  setPlayheadTime(time) {
-    this.playheadTime = time;
-    
-    // CapCut style: scrollOffset = currentTime - (screenWidth/2 / pps)
-    if(window.TimelineUI) {
-      const screenWidth = TimelineUI.canvas ? TimelineUI.canvas.width/2 : 360;
-      TimelineUI.scrollOffset = time - (screenWidth/2 / TimelineUI.pixelsPerSecond);
-      if(TimelineUI.scrollOffset < 0) TimelineUI.scrollOffset = 0;
-      TimelineUI.render();
+  // Long Press 300ms to start drag (InShot Style) + Pinch - Base + Fix - Pinch was in timeline-ui.js, now also here
+  onTouchStart(e, clip) {
+    if(e.touches && e.touches.length===2){
+      this.isPinching=true;
+      const dx=e.touches[0].clientX - e.touches[1].clientX;
+      const dy=e.touches[0].clientY - e.touches[1].clientY;
+      this.startDist=Math.sqrt(dx*dx+dy*dy);
+      this.startPps=window.ZoomEngine ? ZoomEngine.currentPps : 80;
+      this.lastScale=1;
+      console.log('PINCH START (Gesture v2.3) dist', Math.round(this.startDist), 'pps', this.startPps);
+      clearTimeout(this.longPressTimer);
+      if(e.cancelable) e.preventDefault();
+      return;
     }
+    this.startX = e.touches[0].clientX;
+    this.startTime = clip.startTime;
+    this.isDragging = false;
+    
+    this.longPressTimer = setTimeout(() => {
+      this.isDragging = true;
+      console.log('LongPress: Start Drag', clip.id);
+      if(navigator.vibrate) navigator.vibrate(50);
+    }, 300);
+  },
 
-    // Update player
-    if(window.Player) {
-      Player.seekTo(time);
+  onTouchMove(e, clip) {
+    if(e.touches && e.touches.length===2 && this.isPinching){
+      const dx=e.touches[0].clientX - e.touches[1].clientX;
+      const dy=e.touches[0].clientY - e.touches[1].clientY;
+      const curDist=Math.sqrt(dx*dx+dy*dy);
+      const scale=curDist/this.startDist;
+      if(Math.abs(scale-this.lastScale)<0.01) return;
+      this.lastScale=scale;
+      console.log('PINCH MOVE (Gesture v2.3) scale', scale.toFixed(3), 'newPps', Math.round(this.startPps*scale));
+      if(window.ZoomEngine) ZoomEngine.handlePinch(this.startDist, curDist);
+      if(e.cancelable) e.preventDefault();
+      return;
     }
-  },
-
-  // Add snap line (when clip snaps)
-  addSnapLine(time, type = 'clip') {
-    this.snapLines.push({ time, type, visibleUntil: Date.now() + 1000 });
-    // Auto remove after 1s
-    setTimeout(() => {
-      this.snapLines = this.snapLines.filter(s => s.time !== time);
-      if(window.TimelineUI) TimelineUI.render();
-    }, 1000);
-  },
-
-  // Draw snap lines (called from TimelineUI render)
-  drawSnapLines(ctx, timelineUI) {
-    this.snapLines.forEach(snap => {
-      const x = timelineUI.timeToPixel(snap.time);
-      ctx.strokeStyle = snap.type === 'playhead' ? '#FF3B30' : '#4CAF50';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4,4]);
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, ctx.canvas.height);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    });
-  },
-
-  // Beat markers from audio
-  setBeats(beats) {
-    this.beatMarkers = beats;
-    if(window.TimelineUI) TimelineUI.render();
-  },
-
-  drawBeats(ctx, timelineUI) {
-    this.beatMarkers.forEach(beatTime => {
-      const x = timelineUI.timeToPixel(beatTime);
-      ctx.fillStyle = '#FF9800';
-      ctx.fillRect(x-1, 0, 2, 20);
-      // Small dot on ruler
-      ctx.beginPath();
-      ctx.arc(x, 8, 3, 0, Math.PI*2);
-      ctx.fill();
-    });
-  },
-
-  // User markers (like InShot markers)
-  addMarker(time, label = '') {
-    const marker = {
-      id: 'marker_' + Date.now(),
-      time,
-      label,
-      color: '#2196F3'
-    };
-    this.markers.push(marker);
-    return marker;
-  },
-
-  removeMarker(id) {
-    this.markers = this.markers.filter(m => m.id !== id);
-  },
-
-  drawMarkers(ctx, timelineUI) {
-    this.markers.forEach(marker => {
-      const x = timelineUI.timeToPixel(marker.time);
-      ctx.fillStyle = marker.color;
-      ctx.fillRect(x-1, 0, 2, timelineUI.canvas.height/2);
-      if(marker.label) {
-        ctx.fillStyle = marker.color;
-        ctx.font = '9px sans-serif';
-        ctx.fillText(marker.label, x+4, 12);
-      }
-    });
-  },
-
-  // Get all snap times (clip starts/ends + playhead + markers)
-  getSnapTimes(excludeClipId = null) {
-    const times = [];
+    if(!this.isDragging) return;
+    const deltaX = e.touches[0].clientX - this.startX;
+    const deltaTime = deltaX / TimelineMath.config.pixelsPerSecond;
+    clip.startTime = this.startTime + deltaTime;
     
-    if(window.TimelineUI) {
-      TimelineUI.clips.forEach(clip => {
-        if(clip.id === excludeClipId) return;
-        times.push(clip.startTime); // Start
-        times.push(clip.startTime + clip.duration); // End
-      });
-    }
-    
-    times.push(this.playheadTime); // Playhead
-    this.markers.forEach(m => times.push(m.time));
-    
-    return [...new Set(times)]; // Unique
+    // Snap check
+    const threshold = 15 / TimelineMath.config.pixelsPerSecond;
+    const snap = SnapEngine.findSnap(clip, Timeline.clips, [], 0, threshold);
+    if(snap) clip.startTime = snap.time;
+  },
+
+  onTouchEnd() {
+    clearTimeout(this.longPressTimer);
+    this.isDragging = false;
+    this.isPinching = false;
+    this.startDist = 0;
+  },
+  init(){
+    console.log('Gesture v2.3 - Document Level Backup Pinch + LongPress Drag - Ready');
+    const els=[document.getElementById('timelineArea'), document.getElementById('rulerCanvas'), document.body, document];
+    els.forEach(el=>{
+      if(!el || el._pinchBackupV23) return;
+      el.addEventListener('touchstart', (e)=>this.onTouchStart(e, null), {passive:false});
+      el.addEventListener('touchmove', (e)=>this.onTouchMove(e, null), {passive:false});
+      el.addEventListener('touchend', (e)=>this.onTouchEnd(e), {passive:false});
+      el._pinchBackupV23=true;
+    });
   }
 };
-window.MarkersEngine = MarkersEngine;
+window.Gesture = Gesture;
